@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -56,6 +56,20 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [submittedDate, setSubmittedDate] = useState<Date | null>(null);
   const [submittedLocation, setSubmittedLocation] = useState<Location | null>(null);
+  const observerRef = useRef<ResizeObserver | null>(null);
+  const [contentHeight, setContentHeight] = useState(0);
+
+  const contentRef = useCallback((node: HTMLDivElement | null) => {
+    observerRef.current?.disconnect();
+    if (!node) return;
+    const measure = () => {
+      console.log("[polaroids] measure:", node.offsetHeight);
+      setContentHeight(node.offsetHeight);
+    };
+    measure();
+    observerRef.current = new ResizeObserver(measure);
+    observerRef.current.observe(node);
+  }, []);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -74,6 +88,8 @@ export default function Home() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || `Request failed (${res.status})`);
+      console.log("[/api/check] response:", json);
+      console.log("[/api/check] news count:", json.news?.length);
       setData(json);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong";
@@ -93,61 +109,61 @@ export default function Home() {
   const weekday = submittedDate ? WEEKDAYS[submittedDate.getDay()] : null;
 
   const year = submittedDate?.getFullYear();
-  const photoQueries: { query: string; caption: string }[] = data
-    ? [
-        submittedLocation
-          ? { query: `${submittedLocation.label} ${year}`, caption: submittedLocation.label }
-          : data.news[0]
-            ? { query: data.news[0].headline, caption: data.news[0].headline }
-            : null,
-        data.news[0] && submittedLocation
-          ? { query: data.news[0].headline, caption: data.news[0].headline }
-          : data.news[1]
-            ? { query: data.news[1].headline, caption: data.news[1].headline }
-            : null,
-        data.news[1]
-          ? { query: data.news[1].headline, caption: data.news[1].headline }
-          : null,
-        data.news[2]
-          ? { query: data.news[2].headline, caption: data.news[2].headline }
-          : year
-            ? { query: `world ${year}`, caption: `${year}` }
-            : null,
-      ].filter((p): p is { query: string; caption: string } => p !== null)
+  const newsQueries = data
+    ? data.news.map((n) => ({ query: n.headline, caption: n.headline }))
     : [];
+  const seedQueries: ({ query: string; caption: string } | null)[] = [
+    submittedLocation
+      ? { query: `${submittedLocation.label} ${year}`, caption: submittedLocation.label }
+      : null,
+    data?.charts.billboardUS
+      ? {
+          query: `${data.charts.billboardUS.song} ${data.charts.billboardUS.artist}`,
+          caption: data.charts.billboardUS.song,
+        }
+      : null,
+    year ? { query: `world ${year}`, caption: `${year}` } : null,
+  ];
+  const photoQueries = [...seedQueries.filter(Boolean), ...newsQueries].slice(0, 6) as {
+    query: string;
+    caption: string;
+  }[];
+
+  if (typeof window !== "undefined" && data) {
+    console.log("[polaroids] queries:", photoQueries);
+    console.log("[polaroids] contentHeight:", contentHeight);
+    console.log("[polaroids] viewport width:", window.innerWidth, "(xl needs ≥1280)");
+  }
+
+  // 6 polaroids, one per 1/6 of content height, alternating sides with varied offsets
+  // Tailwind requires full literal class names — listed explicitly so JIT picks them up
+  const slots = [
+    { side: "left-8", tilt: "-rotate-6" },
+    { side: "right-16", tilt: "rotate-3" },
+    { side: "left-16", tilt: "rotate-2" },
+    { side: "right-8", tilt: "-rotate-3" },
+    { side: "left-12", tilt: "rotate-6" },
+    { side: "right-12", tilt: "-rotate-2" },
+  ];
 
   return (
     <main className="notebook-paper min-h-screen text-stone-900 px-6 py-16 relative overflow-hidden">
-      {photoQueries[0] && (
-        <PolaroidPhoto
-          query={photoQueries[0].query}
-          caption={photoQueries[0].caption}
-          className="hidden xl:block absolute top-32 left-8 w-56 -rotate-6"
-        />
-      )}
-      {photoQueries[1] && (
-        <PolaroidPhoto
-          query={photoQueries[1].query}
-          caption={photoQueries[1].caption}
-          className="hidden xl:block absolute top-[34rem] left-16 w-56 rotate-3"
-        />
-      )}
-      {photoQueries[2] && (
-        <PolaroidPhoto
-          query={photoQueries[2].query}
-          caption={photoQueries[2].caption}
-          className="hidden xl:block absolute top-32 right-8 w-56 rotate-6"
-        />
-      )}
-      {photoQueries[3] && (
-        <PolaroidPhoto
-          query={photoQueries[3].query}
-          caption={photoQueries[3].caption}
-          className="hidden xl:block absolute top-[34rem] right-16 w-56 -rotate-3"
-        />
-      )}
+      {contentHeight > 0 &&
+        photoQueries.map((p, i) => {
+          const top = contentHeight * ((i * 2 + 1) / 12);
+          const slot = slots[i];
+          return (
+            <PolaroidPhoto
+              key={i}
+              query={p.query}
+              caption={p.caption}
+              className={`hidden xl:block absolute w-56 ${slot.side} ${slot.tilt}`}
+              style={{ top: `${top}px` }}
+            />
+          );
+        })}
 
-      <div className="max-w-2xl mx-auto relative">
+      <div ref={contentRef} className="max-w-2xl mx-auto relative">
         <header className="mb-12 -rotate-1">
           <h1 className="text-7xl font-serif tracking-tight mb-2 leading-none">
             checkmybirth.day
@@ -173,12 +189,7 @@ export default function Home() {
         </form>
 
         {submittedDate && (
-          <div className="mb-8 pb-6 border-b-2 border-stone-300 border-dashed rotate-1">
-            <div className="text-stone-500 mb-1">
-              You were born on a {weekday}
-            </div>
-            <div className="text-4xl font-serif">{pretty}</div>
-          </div>
+          <div className="text-5xl font-serif leading-tight mb-10">  You were born on a {weekday}</div>
         )}
 
         <div className="space-y-8">

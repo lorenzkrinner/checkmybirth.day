@@ -7,23 +7,29 @@ export function PolaroidPhoto({
   query,
   caption,
   className,
+  style,
 }: {
   query: string;
   caption: string;
   className?: string;
+  style?: React.CSSProperties;
 }) {
   const [photo, setPhoto] = useState<PhotoResult | null>(null);
 
   useEffect(() => {
     fetch(`/api/photo?q=${encodeURIComponent(query)}`)
       .then((r) => r.json())
-      .then(setPhoto);
+      .then((p) => {
+        console.log(`[polaroid] "${query}" →`, p.url ? "HIT" : "MISS", p);
+        setPhoto(p);
+      });
   }, [query]);
 
   if (!photo?.url) return null;
 
   return (
     <div
+      style={style}
       className={`bg-white pt-3 pb-10 px-3 shadow-[0_8px_24px_-6px_rgba(0,0,0,0.25)] ${className ?? ""}`}
     >
       <div className="aspect-square w-full overflow-hidden bg-stone-200">
