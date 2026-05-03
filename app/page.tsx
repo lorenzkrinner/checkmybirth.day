@@ -4,17 +4,26 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LocationSearch, type Location } from "./components/LocationSearch";
 import { WeatherWidget } from "./components/WeatherWidget";
 import { DatePicker } from "./components/DatePicker";
+import { SongCard } from "./components/SongCard";
 
+type Single = { song: string; artist: string } | null;
 type ApiResponse = {
   summary: string;
   news: { headline: string; detail: string }[];
   charts: {
-    billboardUS: string | null;
-    ukSingles: string | null;
+    billboardUS: Single;
+    ukSingles: Single;
     boxOfficeMovie: string | null;
   };
 };
@@ -164,9 +173,16 @@ export default function Home() {
                   <CardTitle className="font-serif text-2xl">Number One That Week</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ChartRow label="Billboard Hot 100 (US)" value={data.charts.billboardUS} />
-                  <ChartRow label="UK Singles Chart" value={data.charts.ukSingles} />
-                  <ChartRow label="Box office #1" value={data.charts.boxOfficeMovie} />
+                  <SinglesCarousel
+                    billboardUS={data.charts.billboardUS}
+                    ukSingles={data.charts.ukSingles}
+                  />
+                  {data.charts.boxOfficeMovie && (
+                    <div className="mt-6 pt-4 border-t border-stone-100 flex justify-between items-baseline">
+                      <span className="text-sm text-stone-500">Box office #1</span>
+                      <span className="text-stone-900">{data.charts.boxOfficeMovie}</span>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </>
@@ -177,12 +193,38 @@ export default function Home() {
   );
 }
 
-function ChartRow({ label, value }: { label: string; value: string | null }) {
+function SinglesCarousel({
+  billboardUS,
+  ukSingles,
+}: {
+  billboardUS: Single;
+  ukSingles: Single;
+}) {
+  const items: { label: string; single: Single }[] = [
+    { label: "Billboard Hot 100 (US)", single: billboardUS },
+    { label: "UK Singles Chart", single: ukSingles },
+  ];
+  const filled = items.filter((i) => i.single);
+
+  if (filled.length === 0) {
+    return <p className="text-stone-500">no data</p>;
+  }
+
   return (
-    <div className="flex justify-between items-baseline py-2 border-b border-stone-100 last:border-0">
-      <span className="text-sm text-stone-500">{label}</span>
-      <span className="text-stone-900 text-right">{value ?? "no data"}</span>
-    </div>
+    <Carousel opts={{ align: "start" }} className="w-full">
+      <CarouselContent className="-ml-3">
+        {filled.map(({ label, single }) => (
+          <CarouselItem
+            key={label}
+            className="pl-3 basis-full sm:basis-1/2"
+          >
+            <SongCard song={single!.song} artist={single!.artist} label={label} />
+          </CarouselItem>
+        ))}
+      </CarouselContent>
+      <CarouselPrevious className="left-2 disabled:hidden" />
+      <CarouselNext className="right-2 disabled:hidden" />
+    </Carousel>
   );
 }
 

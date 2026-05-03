@@ -16,12 +16,14 @@ const Body = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
 });
 
+const Song = z.object({ song: z.string(), artist: z.string() }).nullable();
+
 const ResponseSchema = z.object({
   summary: z.string(),
   news: z.array(z.object({ headline: z.string(), detail: z.string() })),
   charts: z.object({
-    billboardUS: z.string().nullable(),
-    ukSingles: z.string().nullable(),
+    billboardUS: Song,
+    ukSingles: Song,
     boxOfficeMovie: z.string().nullable(),
   }),
 });
@@ -57,13 +59,16 @@ Respond with ONLY a valid JSON object matching this exact shape, no preamble, no
     { "headline": "string", "detail": "one sentence of context" }
   ],
   "charts": {
-    "billboardUS": "Song Title — Artist or null",
-    "ukSingles": "Song Title — Artist or null",
-    "boxOfficeMovie": "Movie Title or null"
+    "billboardUS": { "song": "Exact Song Title", "artist": "Primary Artist Name" },
+    "ukSingles": { "song": "...", "artist": "..." },
+    "boxOfficeMovie": "Exact Movie Title"
   }
 }
 
-news should have 3-5 entries (or empty array if no data). Use literal JSON null (not the string "null") for missing chart entries.`,
+Rules for charts:
+- Use the OFFICIAL song & artist names, exactly as they appear on streaming services. No "feat." additions, no album titles, no quotes around names.
+- Use literal JSON null (not the string "null") for any chart entry with no reliable data.
+- news should have 3-5 entries (or [] if no data).`,
   });
 
   // Sonar sometimes wraps JSON in markdown fences despite instructions
