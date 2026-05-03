@@ -34,7 +34,7 @@ export function SongCard({
 
   if (!track) {
     return (
-      <div className="bg-white rounded-2xl border border-stone-200 p-3 space-y-3">
+      <div className="polaroid p-3 space-y-3">
         <Skeleton className="aspect-square w-full rounded-lg" />
         <Skeleton className="h-5 w-3/4" />
         <Skeleton className="h-4 w-1/2" />
@@ -43,8 +43,8 @@ export function SongCard({
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-stone-200 p-3 flex flex-col gap-3 h-full">
-      <div className="text-[10px] uppercase tracking-wider text-stone-400 font-medium">
+    <div className="polaroid p-3 pb-5 flex flex-col gap-3 h-full">
+      <div className="text-xs text-stone-500 font-bold">
         {label}
       </div>
       <div className="relative aspect-square w-full rounded-lg overflow-hidden bg-stone-100">

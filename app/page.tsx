@@ -92,13 +92,13 @@ export default function Home() {
   const weekday = submittedDate ? WEEKDAYS[submittedDate.getDay()] : null;
 
   return (
-    <main className="min-h-screen bg-[#faf7f2] text-stone-900 px-6 py-16">
+    <main className="notebook-paper min-h-screen text-stone-900 px-6 py-16">
       <div className="max-w-2xl mx-auto">
-        <header className="mb-12">
-          <h1 className="text-5xl font-serif tracking-tight mb-3">
+        <header className="mb-12 -rotate-1">
+          <h1 className="text-7xl font-serif tracking-tight mb-2 leading-none">
             checkmybirth.day
           </h1>
-          <p className="text-stone-600 text-lg">
+          <p className="text-stone-600 text-xl">
             What the world looked like the day you were born.
           </p>
         </header>
@@ -119,38 +119,40 @@ export default function Home() {
         </form>
 
         {submittedDate && (
-          <div className="mb-8 pb-6 border-b border-stone-200">
-            <div className="text-sm uppercase tracking-wider text-stone-500 mb-1">
+          <div className="mb-8 pb-6 border-b-2 border-stone-300 border-dashed rotate-1">
+            <div className="text-stone-500 mb-1">
               You were born on a {weekday}
             </div>
-            <div className="text-3xl font-serif">{pretty}</div>
+            <div className="text-4xl font-serif">{pretty}</div>
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className="space-y-8">
           {loading && <SkeletonCards hasLocation={!!submittedLocation} />}
 
           {data && (
             <>
-              <Card>
+              <Card className="polaroid -rotate-1">
                 <CardHeader>
-                  <CardTitle className="font-serif text-2xl">Snapshot</CardTitle>
+                  <CardTitle className="font-serif text-3xl">Snapshot</CardTitle>
                 </CardHeader>
-                <CardContent className="text-stone-700 leading-relaxed">
+                <CardContent className="text-stone-700 leading-relaxed text-lg">
                   {data.summary}
                 </CardContent>
               </Card>
 
               {submittedLocation && submittedDate && (
-                <WeatherWidget
-                  location={submittedLocation}
-                  date={toIso(submittedDate)}
-                />
+                <div className="rotate-1">
+                  <WeatherWidget
+                    location={submittedLocation}
+                    date={toIso(submittedDate)}
+                  />
+                </div>
               )}
 
-              <Card>
+              <Card className="polaroid -rotate-2">
                 <CardHeader>
-                  <CardTitle className="font-serif text-2xl">In the News</CardTitle>
+                  <CardTitle className="font-serif text-3xl">In the News</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {data.news.length === 0 ? (
@@ -159,8 +161,8 @@ export default function Home() {
                     <ul className="space-y-3">
                       {data.news.map((n, i) => (
                         <li key={i}>
-                          <div className="font-medium text-stone-900">{n.headline}</div>
-                          <div className="text-stone-600 text-sm leading-relaxed">{n.detail}</div>
+                          <div className="font-bold text-stone-900 text-lg leading-tight">{n.headline}</div>
+                          <div className="text-stone-600 leading-relaxed">{n.detail}</div>
                         </li>
                       ))}
                     </ul>
@@ -168,9 +170,9 @@ export default function Home() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="polaroid rotate-1">
                 <CardHeader>
-                  <CardTitle className="font-serif text-2xl">Number One That Week</CardTitle>
+                  <CardTitle className="font-serif text-3xl">Number One That Week</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <SinglesCarousel
@@ -178,9 +180,9 @@ export default function Home() {
                     ukSingles={data.charts.ukSingles}
                   />
                   {data.charts.boxOfficeMovie && (
-                    <div className="mt-6 pt-4 border-t border-stone-100 flex justify-between items-baseline">
-                      <span className="text-sm text-stone-500">Box office #1</span>
-                      <span className="text-stone-900">{data.charts.boxOfficeMovie}</span>
+                    <div className="mt-6 pt-4 border-t border-stone-200 flex justify-between items-baseline">
+                      <span className="text-stone-500">Box office #1</span>
+                      <span className="text-stone-900 text-lg">{data.charts.boxOfficeMovie}</span>
                     </div>
                   )}
                 </CardContent>
@@ -231,7 +233,7 @@ function SinglesCarousel({
 function SkeletonCards({ hasLocation }: { hasLocation: boolean }) {
   return (
     <>
-      <Card>
+      <Card className="polaroid -rotate-1">
         <CardHeader>
           <Skeleton className="h-7 w-32" />
         </CardHeader>
@@ -241,8 +243,12 @@ function SkeletonCards({ hasLocation }: { hasLocation: boolean }) {
           <Skeleton className="h-4 w-4/6" />
         </CardContent>
       </Card>
-      {hasLocation && <Skeleton className="h-56 w-full rounded-3xl" />}
-      <Card>
+      {hasLocation && (
+        <div className="rotate-1">
+          <Skeleton className="h-56 w-full rounded-3xl" />
+        </div>
+      )}
+      <Card className="polaroid -rotate-2">
         <CardHeader>
           <Skeleton className="h-7 w-40" />
         </CardHeader>
@@ -252,7 +258,7 @@ function SkeletonCards({ hasLocation }: { hasLocation: boolean }) {
           <Skeleton className="h-12 w-full" />
         </CardContent>
       </Card>
-      <Card>
+      <Card className="polaroid rotate-1">
         <CardHeader>
           <Skeleton className="h-7 w-48" />
         </CardHeader>

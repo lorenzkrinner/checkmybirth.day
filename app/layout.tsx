@@ -1,17 +1,18 @@
 import type { Metadata } from "next";
-import { Geist, Instrument_Serif } from "next/font/google";
+import { Caveat, Kalam } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const handwriting = Kalam({
+  variable: "--font-hand",
   subsets: ["latin"],
+  weight: ["300", "400", "700"],
 });
 
-const serif = Instrument_Serif({
-  variable: "--font-serif",
+const heading = Caveat({
+  variable: "--font-heading",
   subsets: ["latin"],
-  weight: "400",
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -28,9 +29,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${serif.variable} h-full antialiased`}
+      className={`${handwriting.variable} ${heading.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans">
+      <body className="min-h-full flex flex-col">
         {children}
         <Toaster richColors position="top-center" />
       </body>
