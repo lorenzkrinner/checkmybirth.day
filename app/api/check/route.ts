@@ -1,5 +1,5 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { generateObject, generateText, NoObjectGeneratedError } from "ai";
+import { generateObject, generateText } from "ai";
 import { z } from "zod";
 
 const openrouter = createOpenAICompatible({
@@ -13,7 +13,7 @@ const openrouter = createOpenAICompatible({
 });
 
 const RESEARCH_MODEL = "perplexity/sonar";
-const FORMATTER_PRIMARY = "nvidia/llama-3.3-nemotron-super-49b-v1:free";
+const FORMATTER_PRIMARY = "deepseek/deepseek-chat-v3.1:free";
 const FORMATTER_FALLBACK = "openai/gpt-5-mini";
 
 const Body = z.object({
@@ -104,8 +104,8 @@ ${research}`;
     });
     return object;
   } catch (err) {
-    if (!(err instanceof NoObjectGeneratedError)) throw err;
-    console.warn("[/api/check] primary formatter failed, falling back:", err.message);
+    const message = err instanceof Error ? err.message : String(err);
+    console.warn(`[/api/check] primary formatter (${FORMATTER_PRIMARY}) failed, falling back to ${FORMATTER_FALLBACK}:`, message);
     const { object } = await generateObject({
       model: openrouter(FORMATTER_FALLBACK),
       schema: ResponseSchema,
