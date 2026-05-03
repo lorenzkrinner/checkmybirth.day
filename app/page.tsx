@@ -19,15 +19,18 @@ import { SongCard } from "./components/SongCard";
 import { PolaroidPhoto } from "./components/PolaroidPhoto";
 import { Doodles } from "./components/Doodles";
 
-type Single = { song: string; artist: string } | null;
+type Song = { song: string; artist: string };
 type ApiResponse = {
   summary: string;
   news: { headline: string; detail: string }[];
   charts: {
-    billboardUS: Single;
-    ukSingles: Single;
+    globalDaily: Song | null;
+    regional: Song | null;
+    us: Song | null;
     boxOfficeMovie: string | null;
   };
+  regionalCountry: string | null;
+  regionalChartName: string | null;
 };
 
 const WEEKDAYS = [
@@ -93,7 +96,7 @@ export default function Home() {
       const res = await fetch("/api/check", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: toIso(date) }),
+        body: JSON.stringify({ date: toIso(date), location: location?.label ?? null }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || `Request failed (${res.status})`);
@@ -125,10 +128,10 @@ export default function Home() {
     submittedLocation
       ? { query: `${submittedLocation.label} ${year}`, caption: submittedLocation.label }
       : null,
-    data?.charts.billboardUS
+    data?.charts.us
       ? {
-          query: `${data.charts.billboardUS.song} ${data.charts.billboardUS.artist}`,
-          caption: data.charts.billboardUS.song,
+          query: `${data.charts.us.song} ${data.charts.us.artist}`,
+          caption: data.charts.us.song,
         }
       : null,
     year ? { query: `world ${year}`, caption: `${year}` } : null,
@@ -173,7 +176,7 @@ export default function Home() {
           );
         })}
 
-      <div ref={contentRef} className="max-w-2xl mx-auto relative">
+      <div ref={contentRef} className="max-w-2xl mx-auto relative z-10">
         <header className="mb-12 -rotate-1">
           <h1 className="text-7xl font-serif tracking-tight mb-2 leading-none">
             checkmybirth.day
@@ -251,8 +254,10 @@ export default function Home() {
                 </CardHeader>
                 <CardContent>
                   <SinglesCarousel
-                    billboardUS={data.charts.billboardUS}
-                    ukSingles={data.charts.ukSingles}
+                    globalDaily={data.charts.globalDaily}
+                    regional={data.charts.regional}
+                    us={data.charts.us}
+                    regionalChartName={data.regionalChartName}
                   />
                   {data.charts.boxOfficeMovie && (
                     <div className="mt-6 pt-4 border-t border-stone-200 flex justify-between items-baseline">
@@ -271,31 +276,32 @@ export default function Home() {
 }
 
 function SinglesCarousel({
-  billboardUS,
-  ukSingles,
+  globalDaily,
+  regional,
+  us,
+  regionalChartName,
 }: {
-  billboardUS: Single;
-  ukSingles: Single;
+  globalDaily: Song | null;
+  regional: Song | null;
+  us: Song | null;
+  regionalChartName: string | null;
 }) {
-  const items: { label: string; single: Single }[] = [
-    { label: "Billboard Hot 100 (US)", single: billboardUS },
-    { label: "UK Singles Chart", single: ukSingles },
-  ];
-  const filled = items.filter((i) => i.single);
+  const items = [
+    { label: "Global Top Today", song: globalDaily },
+    { label: regionalChartName ?? "Regional", song: regional },
+    { label: "Billboard Hot 100 (US)", song: us },
+  ].filter((i): i is { label: string; song: Song } => !!i.song);
 
-  if (filled.length === 0) {
+  if (items.length === 0) {
     return <p className="text-stone-500">no data</p>;
   }
 
   return (
     <Carousel opts={{ align: "start" }} className="w-full">
       <CarouselContent className="-ml-3">
-        {filled.map(({ label, single }) => (
-          <CarouselItem
-            key={label}
-            className="pl-3 basis-full sm:basis-1/2"
-          >
-            <SongCard song={single!.song} artist={single!.artist} label={label} />
+        {items.map(({ label, song }) => (
+          <CarouselItem key={label} className="pl-3 basis-full sm:basis-1/2">
+            <SongCard song={song.song} artist={song.artist} label={label} />
           </CarouselItem>
         ))}
       </CarouselContent>

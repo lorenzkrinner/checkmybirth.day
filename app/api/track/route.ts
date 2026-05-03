@@ -19,7 +19,7 @@ export async function GET(req: Request) {
   const term = `${song} ${artist}`;
   const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=music&entity=song&limit=1`;
 
-  const res = await fetch(url, { cache: "force-cache" });
+  const res = await fetch(url);
   const data = await res.json();
   const hit = data.results?.[0];
 
