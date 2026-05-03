@@ -1,20 +1,8 @@
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { generateObject, generateText } from "ai";
+import { google } from "@ai-sdk/google";
+import { generateText } from "ai";
 import { z } from "zod";
 
-const openrouter = createOpenAICompatible({
-  name: "openrouter",
-  baseURL: "https://openrouter.ai/api/v1",
-  headers: {
-    Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-    "HTTP-Referer": "https://checkmybirth.day",
-    "X-Title": "checkmybirth.day",
-  },
-});
-
-const RESEARCH_MODEL = "perplexity/sonar";
-const FORMATTER_PRIMARY = "deepseek/deepseek-chat-v3.1:free";
-const FORMATTER_FALLBACK = "openai/gpt-5-mini";
+const MODEL = "gemini-2.5-flash";
 
 const Body = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -24,7 +12,7 @@ const Body = z.object({
 const Song = z.object({ song: z.string(), artist: z.string() });
 type SongT = z.infer<typeof Song>;
 
-const FormattedSchema = z.object({
+const ResponseSchema = z.object({
   summary: z.string(),
   news: z.array(z.object({ headline: z.string(), detail: z.string() })),
   charts: z.object({
@@ -36,8 +24,6 @@ const FormattedSchema = z.object({
   regionalCountry: z.string().nullable(),
   regionalChartName: z.string().nullable(),
 });
-
-type Formatted = z.infer<typeof FormattedSchema>;
 
 export async function POST(req: Request) {
   try {
@@ -57,97 +43,58 @@ async function handle(req: Request) {
     day: "numeric",
   });
 
-  const research = await researchDay(monthDay, year, location ?? null);
-  const formatted = await formatStructured(research, monthDay, year, location ?? null);
+  const regionalAsk = location
+    ? `the official national singles chart for "${location}" (e.g. Offizielle Deutsche Charts for Germany, Oricon for Japan, IFPI for Slovakia) for the week of that date`
+    : "null (no location given)";
+
+  const { text } = await generateText({
+    model: google(MODEL),
+    tools: { google_search: google.tools.googleSearch({}) },
+    temperature: 0.4,
+    prompt: `Research ${monthDay}, ${year} — the exact day someone was born — using web search. Then respond with ONLY a JSON object (no preamble, no markdown fences) matching this exact shape:
+
+{
+  "summary": "2-3 sentence vivid snapshot of what the world felt like that exact day",
+  "news": [
+    { "headline": "string", "detail": "one sentence of context" }
+  ],
+  "charts": {
+    "globalDaily": { "song": "Exact Song Title", "artist": "Primary Artist Name" },
+    "regional": { "song": "...", "artist": "..." },
+    "us": { "song": "...", "artist": "..." },
+    "boxOfficeMovie": "Exact Movie Title"
+  },
+  "regionalCountry": "ISO 3166-1 alpha-2 code (e.g. DE, US, JP)",
+  "regionalChartName": "Name of the regional chart used"
+}
+
+Rules:
+- "globalDaily": Spotify Global Top 50 #1 for that exact day, OR Billboard Global 200 weekly #1 if older.
+- "us": Billboard Hot 100 #1 for the week of that date.
+- "regional": #1 single from ${regionalAsk}.
+- "regionalCountry" and "regionalChartName": ${location ? "set based on the regional chart you used" : "null"}.
+- "boxOfficeMovie": #1 movie at the US box office that weekend.
+- Song titles & artist names must match streaming services exactly — no "feat.", no album names, no quotes around them.
+- Use literal JSON null (not the string "null") when no reliable data exists.
+- "news": at least 4 entries, each a real event from THAT EXACT DAY (not "this week in history"). Use [] only if you genuinely cannot find any.
+- Never invent facts — only use what your web search returned.`,
+  });
+
+  // Gemini sometimes wraps JSON in fences or includes preamble despite instructions
+  const match = text.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error("Model did not return JSON");
+  const parsed = ResponseSchema.parse(JSON.parse(match[0]));
 
   const [globalDaily, us, regional] = await Promise.all([
-    verifySong(formatted.charts.globalDaily),
-    verifySong(formatted.charts.us),
-    verifySong(formatted.charts.regional),
+    verifySong(parsed.charts.globalDaily),
+    verifySong(parsed.charts.us),
+    verifySong(parsed.charts.regional),
   ]);
 
   return Response.json({
-    summary: formatted.summary,
-    news: formatted.news,
-    charts: {
-      globalDaily,
-      regional,
-      us,
-      boxOfficeMovie: formatted.charts.boxOfficeMovie,
-    },
-    regionalCountry: formatted.regionalCountry,
-    regionalChartName: formatted.regionalChartName,
+    ...parsed,
+    charts: { ...parsed.charts, globalDaily, us, regional },
   });
-}
-
-async function researchDay(
-  monthDay: string,
-  year: number,
-  location: string | null,
-): Promise<string> {
-  const regionalAsk = location
-    ? `\n- Identify the country for "${location}" and find its #1 single on the official national singles chart for the week of that date (e.g. Offizielle Deutsche Charts for Germany, IFPI for Slovakia, Oricon for Japan). Cite the chart source.`
-    : "";
-
-  const { text } = await generateText({
-    model: openrouter(RESEARCH_MODEL),
-    temperature: 0.5,
-    maxOutputTokens: 2200,
-    prompt: `Research everything specific to ${monthDay}, ${year} — the exact day. Cast a wide net: news headlines, world events, sports results, cultural moments, what was on TV, music charts, box office. Cite the chart sources you used.
-
-Cover at minimum:
-- 4+ specific news events from THAT EXACT DAY (not generic "this week in history")
-- Spotify Global Top 50 #1 song for that exact day, OR Billboard Global 200 #1 for the week if daily isn't available — exact title and primary artist as on streaming services
-- Billboard Hot 100 #1 single in the US for the week of that date — same format${regionalAsk}
-- #1 movie at the US box office that weekend
-- A vivid 2-3 sentence vibe of what the world felt like that day
-
-Write a thorough research dossier. Don't worry about format yet — another step will structure it.`,
-  });
-  return text;
-}
-
-async function formatStructured(
-  research: string,
-  monthDay: string,
-  year: number,
-  location: string | null,
-): Promise<Formatted> {
-  const prompt = `Below is a research dossier about ${monthDay}, ${year}. Extract the facts into the required schema.
-
-Rules:
-- "globalDaily": Spotify Global Top 50 #1 (or Billboard Global 200 weekly #1 if older) — exact song title and primary artist on streaming services, no "feat.", no album titles, no quotes. Use null if the dossier has no reliable answer.
-- "us": Billboard Hot 100 #1 for that week — same format. Use null if no reliable answer.
-- "regional": ${location ? `national singles chart #1 for the country of "${location}" for that week — same format` : "null (no location given)"}.
-- "regionalCountry": ${location ? `ISO 3166-1 alpha-2 code for the country of "${location}" (e.g. "DE", "SK", "US")` : "null"}.
-- "regionalChartName": ${location ? `name of the chart used for "regional" (e.g. "Offizielle Deutsche Charts")` : "null"}.
-- "boxOfficeMovie": exact movie title or null.
-- "news": at least 4 entries, each a real event from that exact day with one sentence of context. If the dossier truly has none, use [].
-- "summary": 2-3 sentence vivid snapshot.
-- Never invent facts not in the dossier.
-
-DOSSIER:
-${research}`;
-
-  try {
-    const { object } = await generateObject({
-      model: openrouter(FORMATTER_PRIMARY),
-      schema: FormattedSchema,
-      temperature: 0.3,
-      prompt,
-    });
-    return object;
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.warn(`[/api/check] primary formatter (${FORMATTER_PRIMARY}) failed, falling back to ${FORMATTER_FALLBACK}:`, message);
-    const { object } = await generateObject({
-      model: openrouter(FORMATTER_FALLBACK),
-      schema: FormattedSchema,
-      temperature: 0.3,
-      prompt,
-    });
-    return object;
-  }
 }
 
 async function verifySong(s: SongT | null): Promise<SongT | null> {
