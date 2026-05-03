@@ -1,65 +1,136 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import ReactMarkdown from "react-markdown";
+
+const STORAGE_KEY = "checkmybirthday:cache";
+
+type Cache = Record<string, string>;
+
+function loadCache(): Cache {
+  return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+}
+
+function saveCache(date: string, value: string) {
+  const cache = loadCache();
+  cache[date] = value;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(cache));
+}
+
+const WEEKDAYS = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
 
 export default function Home() {
+  const [date, setDate] = useState("");
+  const [result, setResult] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState<{
+    pretty: string;
+    weekday: string;
+  } | null>(null);
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!date) return;
+
+    const d = new Date(date + "T00:00:00");
+    setSubmitted({
+      pretty: d.toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      }),
+      weekday: WEEKDAYS[d.getDay()],
+    });
+
+    const cached = loadCache()[date];
+    if (cached) {
+      setResult(cached);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setResult("");
+
+    const res = await fetch("/api/check", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date }),
+    });
+
+    const reader = res.body!.getReader();
+    const decoder = new TextDecoder();
+    let full = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value);
+      full += chunk;
+      setResult((prev) => prev + chunk);
+    }
+    saveCache(date, full);
+    setLoading(false);
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main className="min-h-screen bg-[#faf7f2] text-stone-900 px-6 py-16">
+      <div className="max-w-2xl mx-auto">
+        <header className="mb-12">
+          <h1 className="text-5xl font-serif tracking-tight mb-3">
+            checkmybirth.day
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-stone-600 text-lg">
+            What the world looked like the day you were born.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+        </header>
+
+        <form onSubmit={onSubmit} className="flex gap-3 mb-12">
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            max={new Date().toISOString().slice(0, 10)}
+            className="flex-1 px-4 py-3 bg-white border border-stone-300 rounded-lg text-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
+            required
+          />
+          <button
+            type="submit"
+            disabled={loading || !date}
+            className="px-6 py-3 bg-stone-900 text-white rounded-lg font-medium disabled:opacity-50 hover:bg-stone-800 transition"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+            {loading ? "Searching…" : "Check"}
+          </button>
+        </form>
+
+        {submitted && (
+          <div className="mb-8 pb-6 border-b border-stone-200">
+            <div className="text-sm uppercase tracking-wider text-stone-500 mb-1">
+              You were born on a {submitted.weekday}
+            </div>
+            <div className="text-3xl font-serif">{submitted.pretty}</div>
+          </div>
+        )}
+
+        {loading && !result && (
+          <div className="text-stone-500 italic">
+            Searching the web for that day…
+          </div>
+        )}
+
+        {result && (
+          <article className="text-stone-800 leading-relaxed [&_h2]:text-2xl [&_h2]:font-serif [&_h2]:mt-10 [&_h2]:mb-3 [&_h2]:text-stone-900 [&_a]:text-stone-900 [&_a]:underline [&_a]:underline-offset-2 [&_strong]:text-stone-900 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:space-y-2 [&_p]:leading-relaxed [&_p]:mb-3">
+            <ReactMarkdown>{result}</ReactMarkdown>
+          </article>
+        )}
+      </div>
+    </main>
   );
 }

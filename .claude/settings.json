@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git log:*)",
+      "Bash(head -1 /Users/janisfleischmann/Repos/MLN-CAMP-APP/app-frontend/app/\\\\\\(tabs\\\\\\)/profile.tsx)",
+      "Bash(xxd)",
+      "Bash(__NEW_LINE_23f03bb5cfc94c16__ echo:*)",
+      "Bash(__NEW_LINE_5cdc3c3beee13c7c__ echo:*)",
+      "Bash(__NEW_LINE_464a269102e03236__ echo:*)",
+      "Bash(git diff:*)",
+      "Bash(npx tsx:*)",
+      "Read(//^    interface Invoice/**)",
+      "Read(//namespace Invoice/**)",
+      "Read(//interface SubscriptionDetails/**)",
+      "Read(//Users/janisfleischmann/Repos/MLN-CAMP-APP/**)"
+    ],
+    "additionalDirectories": [
+      "/Users/janisfleischmann/Downloads"
+    ]
+  }
+}
