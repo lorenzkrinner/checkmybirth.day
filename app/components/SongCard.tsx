@@ -34,20 +34,19 @@ export function SongCard({
 
   if (!track) {
     return (
-      <div className="polaroid p-3 space-y-3">
-        <Skeleton className="aspect-square w-full rounded-lg" />
-        <Skeleton className="h-5 w-3/4" />
-        <Skeleton className="h-4 w-1/2" />
+      <div className="bg-white rounded-2xl overflow-hidden h-full flex flex-col">
+        <Skeleton className="aspect-square w-full rounded-none" />
+        <div className="p-4 space-y-2">
+          <Skeleton className="h-5 w-3/4" />
+          <Skeleton className="h-4 w-1/2" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="polaroid p-3 pb-5 flex flex-col gap-3 h-full">
-      <div className="text-xs text-stone-500 font-bold">
-        {label}
-      </div>
-      <div className="relative aspect-square w-full rounded-lg overflow-hidden bg-stone-100">
+    <div className="bg-white rounded-2xl overflow-hidden flex flex-col h-full">
+      <div className="relative aspect-square w-full bg-stone-100">
         {track.artwork ? (
           <Image
             src={track.artwork}
@@ -57,19 +56,43 @@ export function SongCard({
             className="object-cover"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-stone-400 text-sm">
+          <div className="w-full h-full flex items-center justify-center text-stone-400">
             No artwork
           </div>
         )}
+
+        <div className="absolute top-3 left-3 px-2 py-1 rounded-md bg-black/55 backdrop-blur-sm text-white text-xs font-bold tracking-wide">
+          {label}
+        </div>
+
+        <div className="absolute top-3 right-3 flex gap-1.5">
+          <a
+            href={track.spotifySearchUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Open in Spotify"
+            className="w-8 h-8 rounded-full bg-black/55 backdrop-blur-sm text-white hover:bg-[#1DB954] flex items-center justify-center transition"
+          >
+            <SiSpotify className="w-4 h-4" />
+          </a>
+          <a
+            href={track.appleMusicSearchUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Open in Apple Music"
+            className="w-8 h-8 rounded-full bg-black/55 backdrop-blur-sm text-white hover:bg-stone-900 flex items-center justify-center transition"
+          >
+            <SiApplemusic className="w-4 h-4" />
+          </a>
+        </div>
       </div>
-      <div className="flex items-center justify-between gap-3">
+
+      <div className="flex items-center justify-between gap-3 p-4">
         <div className="min-w-0 flex-1">
-          <div className="font-bold text-stone-900 leading-tight truncate">
+          <div className="font-bold text-stone-900 text-lg leading-tight truncate">
             {track.song}
           </div>
-          <div className="text-sm text-stone-500 mt-0.5 truncate">
-            {track.artist}
-          </div>
+          <div className="text-stone-500 mt-0.5 truncate">{track.artist}</div>
         </div>
         {track.previewUrl && (
           <>
@@ -94,26 +117,6 @@ export function SongCard({
             />
           </>
         )}
-      </div>
-      <div className="flex gap-2 pt-2 border-t border-stone-100">
-        <a
-          href={track.spotifySearchUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Open in Spotify"
-          className="text-stone-500 hover:text-[#1DB954] transition p-1"
-        >
-          <SiSpotify className="w-5 h-5" />
-        </a>
-        <a
-          href={track.appleMusicSearchUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Open in Apple Music"
-          className="text-stone-500 hover:text-stone-900 transition p-1"
-        >
-          <SiApplemusic className="w-5 h-5" />
-        </a>
       </div>
     </div>
   );

@@ -16,6 +16,7 @@ import { LocationSearch, type Location } from "./components/LocationSearch";
 import { WeatherWidget } from "./components/WeatherWidget";
 import { DatePicker } from "./components/DatePicker";
 import { SongCard } from "./components/SongCard";
+import { PolaroidPhoto } from "./components/PolaroidPhoto";
 
 type Single = { song: string; artist: string } | null;
 type ApiResponse = {
@@ -91,9 +92,62 @@ export default function Home() {
     : null;
   const weekday = submittedDate ? WEEKDAYS[submittedDate.getDay()] : null;
 
+  const year = submittedDate?.getFullYear();
+  const photoQueries: { query: string; caption: string }[] = data
+    ? [
+        submittedLocation
+          ? { query: `${submittedLocation.label} ${year}`, caption: submittedLocation.label }
+          : data.news[0]
+            ? { query: data.news[0].headline, caption: data.news[0].headline }
+            : null,
+        data.news[0] && submittedLocation
+          ? { query: data.news[0].headline, caption: data.news[0].headline }
+          : data.news[1]
+            ? { query: data.news[1].headline, caption: data.news[1].headline }
+            : null,
+        data.news[1]
+          ? { query: data.news[1].headline, caption: data.news[1].headline }
+          : null,
+        data.news[2]
+          ? { query: data.news[2].headline, caption: data.news[2].headline }
+          : year
+            ? { query: `world ${year}`, caption: `${year}` }
+            : null,
+      ].filter((p): p is { query: string; caption: string } => p !== null)
+    : [];
+
   return (
-    <main className="notebook-paper min-h-screen text-stone-900 px-6 py-16">
-      <div className="max-w-2xl mx-auto">
+    <main className="notebook-paper min-h-screen text-stone-900 px-6 py-16 relative overflow-hidden">
+      {photoQueries[0] && (
+        <PolaroidPhoto
+          query={photoQueries[0].query}
+          caption={photoQueries[0].caption}
+          className="hidden xl:block absolute top-32 left-8 w-56 -rotate-6"
+        />
+      )}
+      {photoQueries[1] && (
+        <PolaroidPhoto
+          query={photoQueries[1].query}
+          caption={photoQueries[1].caption}
+          className="hidden xl:block absolute top-[34rem] left-16 w-56 rotate-3"
+        />
+      )}
+      {photoQueries[2] && (
+        <PolaroidPhoto
+          query={photoQueries[2].query}
+          caption={photoQueries[2].caption}
+          className="hidden xl:block absolute top-32 right-8 w-56 rotate-6"
+        />
+      )}
+      {photoQueries[3] && (
+        <PolaroidPhoto
+          query={photoQueries[3].query}
+          caption={photoQueries[3].caption}
+          className="hidden xl:block absolute top-[34rem] right-16 w-56 -rotate-3"
+        />
+      )}
+
+      <div className="max-w-2xl mx-auto relative">
         <header className="mb-12 -rotate-1">
           <h1 className="text-7xl font-serif tracking-tight mb-2 leading-none">
             checkmybirth.day
