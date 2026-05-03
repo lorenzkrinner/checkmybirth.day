@@ -1,21 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import ReactMarkdown from "react-markdown";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { LocationSearch, type Location } from "./components/LocationSearch";
+import { WeatherWidget } from "./components/WeatherWidget";
+import { DatePicker } from "./components/DatePicker";
 
-const STORAGE_KEY = "checkmybirthday:cache";
-
-type Cache = Record<string, string>;
-
-function loadCache(): Cache {
-  return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
-}
-
-function saveCache(date: string, value: string) {
-  const cache = loadCache();
-  cache[date] = value;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(cache));
-}
+type ApiResponse = {
+  summary: string;
+  news: { headline: string; detail: string }[];
+  charts: {
+    billboardUS: string | null;
+    ukSingles: string | null;
+    boxOfficeMovie: string | null;
+  };
+};
 
 const WEEKDAYS = [
   "Sunday",
@@ -27,58 +29,58 @@ const WEEKDAYS = [
   "Saturday",
 ];
 
+function toIso(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+const isDev = process.env.NODE_ENV === "development";
+const devDate = isDev ? new Date(2008, 7, 15) : undefined;
+const devLocation: Location | null = isDev
+  ? { label: "Bayern, Deutschland", lat: 48.7904, lon: 11.4979 }
+  : null;
+
 export default function Home() {
-  const [date, setDate] = useState("");
-  const [result, setResult] = useState("");
+  const [date, setDate] = useState<Date | undefined>(devDate);
+  const [location, setLocation] = useState<Location | null>(devLocation);
+  const [data, setData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState<{
-    pretty: string;
-    weekday: string;
-  } | null>(null);
+  const [submittedDate, setSubmittedDate] = useState<Date | null>(null);
+  const [submittedLocation, setSubmittedLocation] = useState<Location | null>(null);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!date) return;
 
-    const d = new Date(date + "T00:00:00");
-    setSubmitted({
-      pretty: d.toLocaleDateString("en-US", {
+    setSubmittedDate(date);
+    setSubmittedLocation(location);
+    setLoading(true);
+    setData(null);
+
+    try {
+      const res = await fetch("/api/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: toIso(date) }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || `Request failed (${res.status})`);
+      setData(json);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      toast.error("Couldn't fetch your birthday", { description: message });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const pretty = submittedDate
+    ? submittedDate.toLocaleDateString("en-US", {
         month: "long",
         day: "numeric",
         year: "numeric",
-      }),
-      weekday: WEEKDAYS[d.getDay()],
-    });
-
-    const cached = loadCache()[date];
-    if (cached) {
-      setResult(cached);
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    setResult("");
-
-    const res = await fetch("/api/check", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date }),
-    });
-
-    const reader = res.body!.getReader();
-    const decoder = new TextDecoder();
-    let full = "";
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      const chunk = decoder.decode(value);
-      full += chunk;
-      setResult((prev) => prev + chunk);
-    }
-    saveCache(date, full);
-    setLoading(false);
-  }
+      })
+    : null;
+  const weekday = submittedDate ? WEEKDAYS[submittedDate.getDay()] : null;
 
   return (
     <main className="min-h-screen bg-[#faf7f2] text-stone-900 px-6 py-16">
@@ -92,45 +94,132 @@ export default function Home() {
           </p>
         </header>
 
-        <form onSubmit={onSubmit} className="flex gap-3 mb-12">
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            max={new Date().toISOString().slice(0, 10)}
-            className="flex-1 px-4 py-3 bg-white border border-stone-300 rounded-lg text-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
-            required
-          />
-          <button
+        <form onSubmit={onSubmit} className="mb-12 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <DatePicker value={date} onChange={setDate} />
+            <LocationSearch value={location} onChange={setLocation} />
+          </div>
+          <Button
             type="submit"
             disabled={loading || !date}
-            className="px-6 py-3 bg-stone-900 text-white rounded-lg font-medium disabled:opacity-50 hover:bg-stone-800 transition"
+            size="lg"
+            className="w-full h-12 text-base"
           >
             {loading ? "Searching…" : "Check"}
-          </button>
+          </Button>
         </form>
 
-        {submitted && (
+        {submittedDate && (
           <div className="mb-8 pb-6 border-b border-stone-200">
             <div className="text-sm uppercase tracking-wider text-stone-500 mb-1">
-              You were born on a {submitted.weekday}
+              You were born on a {weekday}
             </div>
-            <div className="text-3xl font-serif">{submitted.pretty}</div>
+            <div className="text-3xl font-serif">{pretty}</div>
           </div>
         )}
 
-        {loading && !result && (
-          <div className="text-stone-500 italic">
-            Searching the web for that day…
-          </div>
-        )}
+        <div className="space-y-4">
+          {loading && <SkeletonCards hasLocation={!!submittedLocation} />}
 
-        {result && (
-          <article className="text-stone-800 leading-relaxed [&_h2]:text-2xl [&_h2]:font-serif [&_h2]:mt-10 [&_h2]:mb-3 [&_h2]:text-stone-900 [&_a]:text-stone-900 [&_a]:underline [&_a]:underline-offset-2 [&_strong]:text-stone-900 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:space-y-2 [&_p]:leading-relaxed [&_p]:mb-3">
-            <ReactMarkdown>{result}</ReactMarkdown>
-          </article>
-        )}
+          {data && (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="font-serif text-2xl">Snapshot</CardTitle>
+                </CardHeader>
+                <CardContent className="text-stone-700 leading-relaxed">
+                  {data.summary}
+                </CardContent>
+              </Card>
+
+              {submittedLocation && submittedDate && (
+                <WeatherWidget
+                  location={submittedLocation}
+                  date={toIso(submittedDate)}
+                />
+              )}
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="font-serif text-2xl">In the News</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {data.news.length === 0 ? (
+                    <p className="text-stone-500">no data</p>
+                  ) : (
+                    <ul className="space-y-3">
+                      {data.news.map((n, i) => (
+                        <li key={i}>
+                          <div className="font-medium text-stone-900">{n.headline}</div>
+                          <div className="text-stone-600 text-sm leading-relaxed">{n.detail}</div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="font-serif text-2xl">Number One That Week</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ChartRow label="Billboard Hot 100 (US)" value={data.charts.billboardUS} />
+                  <ChartRow label="UK Singles Chart" value={data.charts.ukSingles} />
+                  <ChartRow label="Box office #1" value={data.charts.boxOfficeMovie} />
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </div>
       </div>
     </main>
+  );
+}
+
+function ChartRow({ label, value }: { label: string; value: string | null }) {
+  return (
+    <div className="flex justify-between items-baseline py-2 border-b border-stone-100 last:border-0">
+      <span className="text-sm text-stone-500">{label}</span>
+      <span className="text-stone-900 text-right">{value ?? "no data"}</span>
+    </div>
+  );
+}
+
+function SkeletonCards({ hasLocation }: { hasLocation: boolean }) {
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-7 w-32" />
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-5/6" />
+          <Skeleton className="h-4 w-4/6" />
+        </CardContent>
+      </Card>
+      {hasLocation && <Skeleton className="h-56 w-full rounded-3xl" />}
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-7 w-40" />
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-7 w-48" />
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <Skeleton className="h-6 w-full" />
+          <Skeleton className="h-6 w-full" />
+          <Skeleton className="h-6 w-full" />
+        </CardContent>
+      </Card>
+    </>
   );
 }
