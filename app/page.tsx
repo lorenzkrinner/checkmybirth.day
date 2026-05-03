@@ -17,6 +17,7 @@ import { WeatherWidget } from "./components/WeatherWidget";
 import { DatePicker } from "./components/DatePicker";
 import { SongCard } from "./components/SongCard";
 import { PolaroidPhoto } from "./components/PolaroidPhoto";
+import { Doodles } from "./components/Doodles";
 
 type Single = { song: string; artist: string } | null;
 type ApiResponse = {
@@ -56,19 +57,27 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [submittedDate, setSubmittedDate] = useState<Date | null>(null);
   const [submittedLocation, setSubmittedLocation] = useState<Location | null>(null);
-  const observerRef = useRef<ResizeObserver | null>(null);
+  const contentObserverRef = useRef<ResizeObserver | null>(null);
+  const mainObserverRef = useRef<ResizeObserver | null>(null);
   const [contentHeight, setContentHeight] = useState(0);
+  const [mainHeight, setMainHeight] = useState(0);
 
   const contentRef = useCallback((node: HTMLDivElement | null) => {
-    observerRef.current?.disconnect();
+    contentObserverRef.current?.disconnect();
     if (!node) return;
-    const measure = () => {
-      console.log("[polaroids] measure:", node.offsetHeight);
-      setContentHeight(node.offsetHeight);
-    };
+    const measure = () => setContentHeight(node.offsetHeight);
     measure();
-    observerRef.current = new ResizeObserver(measure);
-    observerRef.current.observe(node);
+    contentObserverRef.current = new ResizeObserver(measure);
+    contentObserverRef.current.observe(node);
+  }, []);
+
+  const mainRef = useCallback((node: HTMLElement | null) => {
+    mainObserverRef.current?.disconnect();
+    if (!node) return;
+    const measure = () => setMainHeight(node.offsetHeight);
+    measure();
+    mainObserverRef.current = new ResizeObserver(measure);
+    mainObserverRef.current.observe(node);
   }, []);
 
   async function onSubmit(e: React.FormEvent) {
@@ -147,7 +156,8 @@ export default function Home() {
   ];
 
   return (
-    <main className="notebook-paper min-h-screen text-stone-900 px-6 py-16 relative overflow-hidden">
+    <main ref={mainRef} className="notebook-paper min-h-screen text-stone-900 px-6 py-16 relative overflow-hidden">
+      <Doodles height={mainHeight} />
       {contentHeight > 0 &&
         photoQueries.map((p, i) => {
           const top = contentHeight * ((i * 2 + 1) / 12);
