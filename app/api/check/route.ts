@@ -30,9 +30,22 @@ export async function POST(req: Request) {
     return await handle(req);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
+    if (isNetworkError(err)) {
+      console.warn("[/api/check] upstream unavailable:", message);
+      return Response.json(
+        { error: "The birthday lookup service is temporarily unavailable. Check your internet connection and try again." },
+        { status: 503 }
+      );
+    }
     console.error("[/api/check] failed:", err);
     return Response.json({ error: message }, { status: 500 });
   }
+}
+
+function isNetworkError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const text = `${err.message} ${err.stack ?? ""}`;
+  return /ENOTFOUND|ECONNREFUSED|ECONNRESET|ETIMEDOUT|fetch failed|Cannot connect to API/i.test(text);
 }
 
 async function handle(req: Request) {
@@ -101,7 +114,14 @@ async function verifySong(s: SongT | null): Promise<SongT | null> {
   if (!s) return null;
   const term = `${s.song} ${s.artist}`;
   const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=music&entity=song&limit=1`;
-  const res = await fetch(url);
+  let res: Response;
+
+  try {
+    res = await fetch(url);
+  } catch (err) {
+    console.warn("[/api/check] iTunes verification unavailable:", err);
+    return null;
+  }
   if (!res.ok) return null;
   const data: { results?: { previewUrl?: string }[] } = await res.json();
   return data.results?.[0]?.previewUrl ? s : null;

@@ -50,15 +50,30 @@ export function LocationSearch({
       setResults([]);
       return;
     }
+    let cancelled = false;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
-      const res = await fetch(
-        `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5`
-      );
-      const data = await res.json();
-      setResults(data.features ?? []);
-      setOpen(true);
+      try {
+        const res = await fetch(
+          `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5`
+        );
+        if (!res.ok) throw new Error(`Photon request failed (${res.status})`);
+        const data = await res.json();
+        if (cancelled) return;
+        setResults(data.features ?? []);
+        setOpen(true);
+      } catch (err) {
+        if (cancelled) return;
+        console.warn("[location-search] unavailable:", err);
+        setResults([]);
+        setOpen(false);
+      }
     }, 250);
+
+    return () => {
+      cancelled = true;
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
   }, [query, value?.label]);
 
   function pick(f: Feature) {

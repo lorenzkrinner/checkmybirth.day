@@ -17,12 +17,27 @@ export function PolaroidPhoto({
   const [photo, setPhoto] = useState<PhotoResult | null>(null);
 
   useEffect(() => {
-    fetch(`/api/photo?q=${encodeURIComponent(query)}`)
-      .then((r) => r.json())
-      .then((p) => {
+    let cancelled = false;
+
+    async function loadPhoto() {
+      try {
+        const res = await fetch(`/api/photo?q=${encodeURIComponent(query)}`);
+        const p = await res.json();
+        if (cancelled) return;
         console.log(`[polaroid] "${query}" →`, p.url ? "HIT" : "MISS", p);
         setPhoto(p);
-      });
+      } catch (err) {
+        if (cancelled) return;
+        console.warn(`[polaroid] "${query}" unavailable:`, err);
+        setPhoto({ url: null, title: query });
+      }
+    }
+
+    loadPhoto();
+
+    return () => {
+      cancelled = true;
+    };
   }, [query]);
 
   if (!photo?.url) return null;
