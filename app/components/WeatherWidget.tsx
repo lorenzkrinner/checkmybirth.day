@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Location } from "./LocationSearch";
 
 type Hourly = {
@@ -10,7 +9,7 @@ type Hourly = {
   weathercode: number[];
 };
 
-type ArchiveResponse = {
+export type ArchiveResponse = {
   hourly: Hourly;
   daily: {
     sunrise: string[];
@@ -20,6 +19,17 @@ type ArchiveResponse = {
     weathercode: number[];
   };
 };
+
+export async function fetchWeather(
+  location: Location,
+  date: string
+): Promise<ArchiveResponse> {
+  const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${location.lat}&longitude=${location.lon}&start_date=${date}&end_date=${date}&hourly=temperature_2m,weathercode&daily=sunrise,sunset,temperature_2m_max,temperature_2m_min,weathercode&temperature_unit=celsius&timezone=auto`;
+  const res = await fetch(url, { cache: "no-store" });
+  const d = await res.json();
+  if (d.error) throw new Error(d.reason || "No weather data");
+  return d as ArchiveResponse;
+}
 
 // WMO weather codes → emoji + label + gradient
 function weatherFor(code: number, isNight = false) {
@@ -54,43 +64,11 @@ const HOURS = [0, 6, 9, 12, 15, 18, 21];
 
 export function WeatherWidget({
   location,
-  date,
+  data,
 }: {
   location: Location;
-  date: string;
+  data: ArchiveResponse;
 }) {
-  const [data, setData] = useState<ArchiveResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setData(null);
-    setError(null);
-    const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${location.lat}&longitude=${location.lon}&start_date=${date}&end_date=${date}&hourly=temperature_2m,weathercode&daily=sunrise,sunset,temperature_2m_max,temperature_2m_min,weathercode&temperature_unit=celsius&timezone=auto`;
-    fetch(url)
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.error) {
-          setError(d.reason || "No weather data");
-          toast.error("Weather unavailable", { description: d.reason });
-        } else {
-          setData(d);
-        }
-      });
-  }, [location, date]);
-
-  if (error) {
-    return (
-      <div className="rounded-3xl bg-stone-200 text-stone-600 p-6 text-center">
-        No weather data available for this location & date.
-      </div>
-    );
-  }
-  if (!data) {
-    return (
-      <div className="rounded-3xl bg-stone-200 h-56 animate-pulse" />
-    );
-  }
-
   const dayCode = data.daily.weathercode[0];
   const high = Math.round(data.daily.temperature_2m_max[0]);
   const low = Math.round(data.daily.temperature_2m_min[0]);
@@ -104,53 +82,58 @@ export function WeatherWidget({
   const sunrise = data.daily.sunrise[0]?.split("T")[1]?.slice(0, 5);
 
   return (
-    <div
-      className={`rounded-3xl bg-gradient-to-b ${day.bg} text-white p-6 shadow-xl`}
-    >
-      <div className="flex justify-between items-start mb-4">
-        <div>
-          <div className="text-2xl font-medium">{city}</div>
-          <div className="text-6xl font-light tracking-tight mt-1">
-            {noonTemp}°
-          </div>
-        </div>
-        <div className="text-right">
-          <div className="text-5xl">{day.icon}</div>
-          <div className="text-sm font-medium mt-2">{day.label}</div>
-          <div className="text-xs opacity-80">
-            H:{high}° L:{low}°
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-7 gap-1 text-center pt-4 border-t border-white/20">
-        {HOURS.map((h) => {
-          const idx = data.hourly.time.findIndex((t) =>
-            t.endsWith(`T${String(h).padStart(2, "0")}:00`)
-          );
-          if (idx < 0) return <div key={h} />;
-          const temp = Math.round(data.hourly.temperature_2m[idx]);
-          const code = data.hourly.weathercode[idx];
-          const isNight = h < 6 || h > 19;
-          const w = weatherFor(code, isNight);
-          return (
-            <div key={h} className="flex flex-col items-center gap-1">
-              <div className="text-xs opacity-90">
-                {h === 0 ? "12AM" : h < 12 ? `${h}AM` : h === 12 ? "12PM" : `${h - 12}PM`}
+    <Card className="polaroid">
+      <CardHeader>
+        <CardTitle className="font-serif text-3xl">Weather</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className={`rounded-2xl bg-gradient-to-b ${day.bg} text-white p-5 shadow-inner`}>
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <div className="text-2xl font-medium">{city}</div>
+              <div className="text-6xl font-light tracking-tight mt-1">
+                {noonTemp}°
               </div>
-              <div className="text-xl">{w.icon}</div>
-              <div className="text-sm font-medium">{temp}°</div>
             </div>
-          );
-        })}
-      </div>
+            <div className="text-right">
+              <div className="text-5xl">{day.icon}</div>
+              <div className="text-sm font-medium mt-2">{day.label}</div>
+              <div className="text-xs opacity-80">
+                H:{high}° L:{low}°
+              </div>
+            </div>
+          </div>
 
-      {(sunrise || sunset) && (
-        <div className="flex justify-between text-xs opacity-80 mt-4 pt-3 border-t border-white/20">
-          {sunrise && <span>🌅 Sunrise {sunrise}</span>}
-          {sunset && <span>🌇 Sunset {sunset}</span>}
+          <div className="grid grid-cols-7 gap-1 text-center pt-4 border-t border-white/20">
+            {HOURS.map((h) => {
+              const idx = data.hourly.time.findIndex((t) =>
+                t.endsWith(`T${String(h).padStart(2, "0")}:00`)
+              );
+              if (idx < 0) return <div key={h} />;
+              const temp = Math.round(data.hourly.temperature_2m[idx]);
+              const code = data.hourly.weathercode[idx];
+              const isNight = h < 6 || h > 19;
+              const w = weatherFor(code, isNight);
+              return (
+                <div key={h} className="flex flex-col items-center gap-1">
+                  <div className="text-xs opacity-90">
+                    {h === 0 ? "12AM" : h < 12 ? `${h}AM` : h === 12 ? "12PM" : `${h - 12}PM`}
+                  </div>
+                  <div className="text-xl">{w.icon}</div>
+                  <div className="text-sm font-medium">{temp}°</div>
+                </div>
+              );
+            })}
+          </div>
+
+          {(sunrise || sunset) && (
+            <div className="flex justify-between text-xs opacity-80 mt-4 pt-3 border-t border-white/20">
+              {sunrise && <span>🌅 Sunrise {sunrise}</span>}
+              {sunset && <span>🌇 Sunset {sunset}</span>}
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      </CardContent>
+    </Card>
   );
 }

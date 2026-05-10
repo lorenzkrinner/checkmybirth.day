@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/carousel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LocationSearch, type Location } from "./components/LocationSearch";
-import { WeatherWidget } from "./components/WeatherWidget";
+import { WeatherWidget, fetchWeather, type ArchiveResponse } from "./components/WeatherWidget";
 import { DatePicker } from "./components/DatePicker";
 import { SongCard } from "./components/SongCard";
 import { PolaroidPhoto } from "./components/PolaroidPhoto";
@@ -23,6 +23,9 @@ type Song = { song: string; artist: string };
 type ApiResponse = {
   summary: string;
   news: { headline: string; detail: string }[];
+};
+
+type MusicResponse = {
   charts: {
     globalDaily: Song | null;
     regional: Song | null;
@@ -57,13 +60,15 @@ export default function Home() {
   const [date, setDate] = useState<Date | undefined>(devDate);
   const [location, setLocation] = useState<Location | null>(devLocation);
   const [data, setData] = useState<ApiResponse | null>(null);
+  const [musicData, setMusicData] = useState<MusicResponse | null>(null);
+  const [weatherData, setWeatherData] = useState<ArchiveResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [submittedDate, setSubmittedDate] = useState<Date | null>(null);
   const [submittedLocation, setSubmittedLocation] = useState<Location | null>(null);
+  const [currentSearchId, setCurrentSearchId] = useState<string | null>(null);
+  const activeSearchRef = useRef<string | null>(null);
   const contentObserverRef = useRef<ResizeObserver | null>(null);
-  const mainObserverRef = useRef<ResizeObserver | null>(null);
   const [contentHeight, setContentHeight] = useState(0);
-  const [mainHeight, setMainHeight] = useState(0);
 
   const contentRef = useCallback((node: HTMLDivElement | null) => {
     contentObserverRef.current?.disconnect();
@@ -74,50 +79,51 @@ export default function Home() {
     contentObserverRef.current.observe(node);
   }, []);
 
-  const mainRef = useCallback((node: HTMLElement | null) => {
-    mainObserverRef.current?.disconnect();
-    if (!node) return;
-    const measure = () => setMainHeight(node.offsetHeight);
-    measure();
-    mainObserverRef.current = new ResizeObserver(measure);
-    mainObserverRef.current.observe(node);
-  }, []);
-
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!date) return;
 
+    const searchId = crypto.randomUUID();
+    activeSearchRef.current = searchId;
+    setCurrentSearchId(searchId);
     setSubmittedDate(date);
     setSubmittedLocation(location);
-    setLoading(true);
     setData(null);
+    setMusicData(null);
+    setWeatherData(null);
+    setLoading(true);
 
-    try {
-      const res = await fetch("/api/check", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: toIso(date), location: location?.label ?? null }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || `Request failed (${res.status})`);
-      console.log("[/api/check] response:", json);
-      console.log("[/api/check] news count:", json.news?.length);
-      setData(json);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Something went wrong";
-      toast.error("Couldn't fetch your birthday", { description: message });
-    } finally {
-      setLoading(false);
-    }
+    const iso = toIso(date);
+    const payload = { date: iso, location: location?.label ?? null };
+    const json = { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) };
+
+    const checkP = fetch("/api/check", json).then(async (r) => {
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || `check ${r.status}`);
+      return j as ApiResponse;
+    });
+    const musicP = fetch("/api/music", json).then(async (r) => {
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || `music ${r.status}`);
+      return j as MusicResponse;
+    });
+    const weatherP = location ? fetchWeather(location, iso) : Promise.resolve(null);
+
+    const [checkR, musicR, weatherR] = await Promise.allSettled([checkP, musicP, weatherP]);
+    if (activeSearchRef.current !== searchId) return;
+
+    if (checkR.status === "fulfilled") setData(checkR.value);
+    else toast.error("Couldn't fetch your birthday", { description: checkR.reason?.message });
+
+    if (musicR.status === "fulfilled") setMusicData(musicR.value);
+    else toast.error("Couldn't fetch the music", { description: musicR.reason?.message });
+
+    if (weatherR.status === "fulfilled") setWeatherData(weatherR.value);
+    else toast.error("Weather unavailable", { description: weatherR.reason?.message });
+
+    setLoading(false);
   }
 
-  const pretty = submittedDate
-    ? submittedDate.toLocaleDateString("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      })
-    : null;
   const weekday = submittedDate ? WEEKDAYS[submittedDate.getDay()] : null;
 
   const year = submittedDate?.getFullYear();
@@ -128,10 +134,10 @@ export default function Home() {
     submittedLocation
       ? { query: `${submittedLocation.label} ${year}`, caption: submittedLocation.label }
       : null,
-    data?.charts.us
+    musicData?.charts.us
       ? {
-          query: `${data.charts.us.song} ${data.charts.us.artist}`,
-          caption: data.charts.us.song,
+          query: `${musicData.charts.us.song} ${musicData.charts.us.artist}`,
+          caption: musicData.charts.us.song,
         }
       : null,
     year ? { query: `world ${year}`, caption: `${year}` } : null,
@@ -141,7 +147,9 @@ export default function Home() {
     caption: string;
   }[];
 
-  if (typeof window !== "undefined" && data) {
+  const polaroidSearchId = data && currentSearchId && !loading ? currentSearchId : null;
+
+  if (typeof window !== "undefined" && polaroidSearchId) {
     console.log("[polaroids] queries:", photoQueries);
     console.log("[polaroids] contentHeight:", contentHeight);
     console.log("[polaroids] viewport width:", window.innerWidth, "(xl needs ≥1280)");
@@ -159,17 +167,18 @@ export default function Home() {
   ];
 
   return (
-    <main ref={mainRef} className="notebook-paper min-h-screen text-stone-900 px-6 py-16 relative overflow-hidden">
-      <Doodles height={mainHeight} />
-      {contentHeight > 0 &&
+    <main className="notebook-paper min-h-screen text-stone-900 px-6 py-16 relative overflow-hidden">
+      <Doodles />
+      {polaroidSearchId && contentHeight > 0 &&
         photoQueries.map((p, i) => {
           const top = contentHeight * ((i * 2 + 1) / 12);
           const slot = slots[i];
           return (
             <PolaroidPhoto
-              key={i}
+              key={`${polaroidSearchId}-${i}-${p.query}`}
               query={p.query}
               caption={p.caption}
+              searchId={polaroidSearchId}
               className={`hidden xl:block absolute w-56 ${slot.side} ${slot.tilt}`}
               style={{ top: `${top}px` }}
             />
@@ -202,13 +211,47 @@ export default function Home() {
         </form>
 
         {submittedDate && (
-          <div className="text-5xl font-serif leading-tight mb-10">  You were born on a {weekday}</div>
+          <div className="text-5xl font-serif leading-tight mb-10">You were born on a {weekday}</div>
         )}
 
         <div className="space-y-8">
-          {loading && <SkeletonCards hasLocation={!!submittedLocation} />}
+          {loading && (
+            <>
+              <WeatherSkeletonCard />
+              <MusicSkeletonCard />
+              <AiSkeletonCards />
+            </>
+          )}
 
-          {data && (
+          {!loading && weatherData && submittedLocation && (
+            <div className="rotate-1">
+              <WeatherWidget location={submittedLocation} data={weatherData} />
+            </div>
+          )}
+
+          {!loading && musicData && (
+            <Card className="polaroid rotate-1">
+              <CardHeader>
+                <CardTitle className="font-serif text-3xl">Number One That Week</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <SinglesCarousel
+                  globalDaily={musicData.charts.globalDaily}
+                  regional={musicData.charts.regional}
+                  us={musicData.charts.us}
+                  regionalChartName={musicData.regionalChartName}
+                />
+                {musicData.charts.boxOfficeMovie && (
+                  <div className="mt-6 pt-4 border-t border-stone-200 flex justify-between items-baseline">
+                    <span className="text-stone-500">Box office #1</span>
+                    <span className="text-stone-900 text-lg">{musicData.charts.boxOfficeMovie}</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {!loading && data && (
             <>
               <Card className="polaroid -rotate-1">
                 <CardHeader>
@@ -218,15 +261,6 @@ export default function Home() {
                   {data.summary}
                 </CardContent>
               </Card>
-
-              {submittedLocation && submittedDate && (
-                <div className="rotate-1">
-                  <WeatherWidget
-                    location={submittedLocation}
-                    date={toIso(submittedDate)}
-                  />
-                </div>
-              )}
 
               <Card className="polaroid -rotate-2">
                 <CardHeader>
@@ -248,27 +282,9 @@ export default function Home() {
                 </CardContent>
               </Card>
 
-              <Card className="polaroid rotate-1">
-                <CardHeader>
-                  <CardTitle className="font-serif text-3xl">Number One That Week</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <SinglesCarousel
-                    globalDaily={data.charts.globalDaily}
-                    regional={data.charts.regional}
-                    us={data.charts.us}
-                    regionalChartName={data.regionalChartName}
-                  />
-                  {data.charts.boxOfficeMovie && (
-                    <div className="mt-6 pt-4 border-t border-stone-200 flex justify-between items-baseline">
-                      <span className="text-stone-500">Box office #1</span>
-                      <span className="text-stone-900 text-lg">{data.charts.boxOfficeMovie}</span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
             </>
           )}
+
         </div>
       </div>
     </main>
@@ -300,7 +316,7 @@ function SinglesCarousel({
     <Carousel opts={{ align: "start" }} className="w-full">
       <CarouselContent className="-ml-3">
         {items.map(({ label, song }) => (
-          <CarouselItem key={label} className="pl-3 basis-full sm:basis-1/2">
+          <CarouselItem key={`${label}-${song.song}-${song.artist}`} className="pl-3 basis-full sm:basis-1/2">
             <SongCard song={song.song} artist={song.artist} label={label} />
           </CarouselItem>
         ))}
@@ -311,7 +327,7 @@ function SinglesCarousel({
   );
 }
 
-function SkeletonCards({ hasLocation }: { hasLocation: boolean }) {
+function AiSkeletonCards() {
   return (
     <>
       <Card className="polaroid -rotate-1">
@@ -324,11 +340,6 @@ function SkeletonCards({ hasLocation }: { hasLocation: boolean }) {
           <Skeleton className="h-4 w-4/6" />
         </CardContent>
       </Card>
-      {hasLocation && (
-        <div className="rotate-1">
-          <Skeleton className="h-56 w-full rounded-3xl" />
-        </div>
-      )}
       <Card className="polaroid -rotate-2">
         <CardHeader>
           <Skeleton className="h-7 w-40" />
@@ -339,16 +350,44 @@ function SkeletonCards({ hasLocation }: { hasLocation: boolean }) {
           <Skeleton className="h-12 w-full" />
         </CardContent>
       </Card>
-      <Card className="polaroid rotate-1">
-        <CardHeader>
-          <Skeleton className="h-7 w-48" />
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <Skeleton className="h-6 w-full" />
-          <Skeleton className="h-6 w-full" />
-          <Skeleton className="h-6 w-full" />
-        </CardContent>
-      </Card>
     </>
+  );
+}
+
+function WeatherSkeletonCard() {
+  return (
+    <Card className="polaroid rotate-1">
+      <CardHeader>
+        <Skeleton className="h-7 w-28" />
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex justify-between gap-6">
+          <div className="space-y-3">
+            <Skeleton className="h-6 w-36" />
+            <Skeleton className="h-16 w-24" />
+          </div>
+          <div className="space-y-3 text-right">
+            <Skeleton className="h-12 w-12 rounded-full" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+        </div>
+        <Skeleton className="h-20 w-full" />
+      </CardContent>
+    </Card>
+  );
+}
+
+function MusicSkeletonCard() {
+  return (
+    <Card className="polaroid rotate-1">
+      <CardHeader>
+        <Skeleton className="h-7 w-48" />
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <Skeleton className="h-48 w-full rounded-2xl" />
+        <Skeleton className="h-6 w-full" />
+        <Skeleton className="h-6 w-2/3" />
+      </CardContent>
+    </Card>
   );
 }
