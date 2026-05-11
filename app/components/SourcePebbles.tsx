@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+const VERTEX = /vertexaisearch\.cloud\.google\.com/;
+
 function hostOf(u: string): string {
   return u.replace(/^https?:\/\/(www\.)?/i, "").split("/")[0];
 }
@@ -10,17 +12,21 @@ export function InlineSourced({ text }: { text: string }) {
   for (const m of text.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g)) {
     const at = m.index ?? 0;
     if (at > last) parts.push(text.slice(last, at));
-    parts.push(
-      <a
-        key={at}
-        href={m[2]}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-stone-900 underline decoration-stone-400 underline-offset-2 hover:decoration-stone-900"
-      >
-        {m[1]}
-      </a>
-    );
+    if (VERTEX.test(m[2])) {
+      parts.push(m[1]);
+    } else {
+      parts.push(
+        <a
+          key={at}
+          href={m[2]}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-stone-900 underline decoration-stone-400 underline-offset-2 hover:decoration-stone-900"
+        >
+          {m[1]}
+        </a>
+      );
+    }
     last = at + m[0].length;
   }
   if (last < text.length) parts.push(text.slice(last));
@@ -28,7 +34,8 @@ export function InlineSourced({ text }: { text: string }) {
 }
 
 export function SourcePebbles({ urls }: { urls?: string[] }) {
-  const sourceUrls = urls?.filter((u) => typeof u === "string" && u.length > 0) ?? [];
+  const sourceUrls =
+    urls?.filter((u) => typeof u === "string" && u.length > 0 && !VERTEX.test(u)) ?? [];
   if (sourceUrls.length === 0) return null;
   return (
     <div className="flex flex-wrap gap-1.5 mt-3">

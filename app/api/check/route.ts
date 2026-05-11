@@ -79,5 +79,53 @@ Rules:
   // Gemini sometimes wraps JSON in fences or includes preamble despite instructions
   const match = text.match(/\{[\s\S]*\}/);
   if (!match) throw new Error("Model did not return JSON");
-  return Response.json(ResponseSchema.parse(JSON.parse(match[0])));
+  const parsed = ResponseSchema.parse(JSON.parse(match[0]));
+  return Response.json(await resolveGroundingRedirects(parsed));
+}
+
+type Parsed = z.infer<typeof ResponseSchema>;
+
+const MD_LINK = /\[([^\]]+)\]\(([^)]+)\)/g;
+const VERTEX = /vertexaisearch\.cloud\.google\.com/;
+
+async function resolveGroundingRedirects(parsed: Parsed): Promise<Parsed> {
+  const urls = new Set<string>();
+  parsed.summarySources.forEach((u) => urls.add(u));
+  parsed.news.forEach((n) => n.sources.forEach((u) => urls.add(u)));
+  for (const m of parsed.summary.matchAll(MD_LINK)) urls.add(m[2]);
+  for (const n of parsed.news) for (const m of n.detail.matchAll(MD_LINK)) urls.add(m[2]);
+
+  const entries = await Promise.all(
+    [...urls].map((u) =>
+      resolveOne(u)
+        .then((r) => [u, r] as const)
+        .catch(() => [u, null] as const)
+    )
+  );
+  const map = new Map(entries);
+
+  const stripDead = (s: string) =>
+    s.replace(MD_LINK, (_, anchor, url) => {
+      const resolved = map.get(url);
+      return resolved ? `[${anchor}](${resolved})` : anchor;
+    });
+  const keepLive = (u: string) => map.get(u) ?? null;
+
+  return {
+    summary: stripDead(parsed.summary),
+    summarySources: parsed.summarySources.map(keepLive).filter((u): u is string => !!u),
+    news: parsed.news.map((n) => ({
+      ...n,
+      detail: stripDead(n.detail),
+      sources: n.sources.map(keepLive).filter((u): u is string => !!u),
+    })),
+  };
+}
+
+async function resolveOne(url: string): Promise<string | null> {
+  if (!VERTEX.test(url)) return url;
+  const res = await fetch(url, { method: "HEAD", redirect: "follow" });
+  // Redirect didn't fire (expired or bogus ID) — final URL still on the vertex host
+  if (VERTEX.test(res.url)) return null;
+  return res.url;
 }
