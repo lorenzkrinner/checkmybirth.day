@@ -294,7 +294,33 @@ export const svgs: Record<string, () => ReactElement<{ className?: string }>> = 
 
 export type DoodleId = keyof typeof svgs;
 
-export function Doodle({ id, className }: { id: DoodleId; className?: string }) {
+export function Doodle({
+  id,
+  x,
+  y,
+  size = 40,
+  rotate = 0,
+}: {
+  id: DoodleId;
+  x: number;
+  y: number;
+  size?: number;
+  rotate?: number;
+}) {
   const Svg = svgs[id];
-  return cloneElement(Svg(), { className });
+  return (
+    <div
+      aria-hidden
+      className="absolute pointer-events-none z-0 text-foreground"
+      style={{
+        top: `${y}px`,
+        left: `calc(50% + ${x}px)`,
+        width: `${size}px`,
+        height: `${size}px`,
+        transform: `translate(-50%, -50%) rotate(${rotate}deg)`,
+      }}
+    >
+      {cloneElement(Svg(), { className: "w-full h-full" })}
+    </div>
+  );
 }
