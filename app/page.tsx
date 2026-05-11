@@ -86,37 +86,37 @@ export default function Home() {
 
   useEffect(() => {
     if (!isDev) return;
-    const enabled = localStorage.getItem(SNAPSHOT_ENABLED_KEY) === "1";
-    setSnapshotEnabled(enabled);
-    const raw = localStorage.getItem(SNAPSHOT_KEY);
-    if (!raw) return;
-    const snap = JSON.parse(raw) as Snapshot;
-    setHasSnapshot(true);
-    if (!enabled) return;
-    const restoredDate = new Date(snap.date);
-    setDate(restoredDate);
-    setLocation(snap.location);
-    setSubmittedDate(restoredDate);
-    setSubmittedLocation(snap.location);
-    setData(snap.data);
-    setMusicData(snap.musicData);
-    setWeatherData(snap.weatherData);
-    setCurrentSearchId(snap.searchId);
-    activeSearchRef.current = snap.searchId;
+    setSnapshotEnabled(localStorage.getItem(SNAPSHOT_ENABLED_KEY) === "1");
+    setHasSnapshot(localStorage.getItem(SNAPSHOT_KEY) !== null);
   }, []);
 
   function handleSnapshotToggle(v: boolean) {
     setSnapshotEnabled(v);
     localStorage.setItem(SNAPSHOT_ENABLED_KEY, v ? "1" : "0");
-    if (!v) {
-      localStorage.removeItem(SNAPSHOT_KEY);
-      setHasSnapshot(false);
-    }
   }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!date) return;
+
+    if (isDev && snapshotEnabled) {
+      const raw = localStorage.getItem(SNAPSHOT_KEY);
+      if (raw) {
+        const snap = JSON.parse(raw) as Snapshot;
+        const restoredDate = new Date(snap.date);
+        setDate(restoredDate);
+        setLocation(snap.location);
+        setSubmittedDate(restoredDate);
+        setSubmittedLocation(snap.location);
+        setData(snap.data);
+        setMusicData(snap.musicData);
+        setWeatherData(snap.weatherData);
+        setCurrentSearchId(snap.searchId);
+        activeSearchRef.current = snap.searchId;
+        setLoading(false);
+        return;
+      }
+    }
 
     const searchId = crypto.randomUUID();
     activeSearchRef.current = searchId;
