@@ -4,6 +4,8 @@ import { z } from "zod";
 
 const MODEL = "gemini-2.5-flash";
 
+export const maxDuration = 60;
+
 const Body = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   location: z.string().nullable().optional(),

@@ -4,6 +4,8 @@ import { z } from "zod";
 
 const MODEL = "gemini-2.5-flash";
 
+export const maxDuration = 60;
+
 const Body = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   location: z.string().nullable().optional(),
@@ -11,7 +13,14 @@ const Body = z.object({
 
 const ResponseSchema = z.object({
   summary: z.string(),
-  news: z.array(z.object({ headline: z.string(), detail: z.string() })),
+  summarySources: z.array(z.string()),
+  news: z.array(
+    z.object({
+      headline: z.string(),
+      detail: z.string(),
+      sources: z.array(z.string()),
+    })
+  ),
 });
 
 export async function POST(req: Request) {
@@ -53,15 +62,18 @@ async function handle(req: Request) {
 
 {
   "summary": "2-3 sentence vivid snapshot of what the world felt like that exact day",
+  "summarySources": ["https://...", "https://..."],
   "news": [
-    { "headline": "string", "detail": "one sentence of context" }
+    { "headline": "string", "detail": "one sentence of context", "sources": ["https://...", "https://..."] }
   ]
 }
 
 Rules:
 - If location is present, include a sentence in the summary about what that place was like where reliable.
 - "news": at least 4 entries, each a real event from THAT EXACT DAY (not "this week in history"). Use [] only if you genuinely cannot find any.
-- Never invent facts — only use what your web search returned.`,
+- Write the "summary" and each news "detail" as plain prose, but anchor key facts to their sources using markdown links in the form [anchor text](https://source-url). Aim for 1–2 inline links per summary and per detail when sources support it.
+- "summarySources" and each news "sources" array: list ALL source URLs you used for that field (including the ones you inlined). 1–4 real URLs from the web search. Use the URLs your search tool returned — do not fabricate them. Empty array only if you genuinely have no source.
+- Never invent facts or URLs — only use what your web search returned.`,
   });
 
   // Gemini sometimes wraps JSON in fences or includes preamble despite instructions
