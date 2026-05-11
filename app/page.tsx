@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +19,7 @@ import { SongCard } from "./components/SongCard";
 import { PolaroidPhoto } from "./components/PolaroidPhoto";
 import { Doodles } from "./components/Doodles";
 import { NotebookPaper } from "./components/NotebookPaper";
+import { DevSnapshotToggle } from "./components/DevSnapshotToggle";
 
 type Song = { song: string; artist: string };
 type ApiResponse = {
@@ -57,6 +58,18 @@ const devLocation: Location | null = isDev
   ? { label: "Bayern, Deutschland", lat: 48.7904, lon: 11.4979 }
   : null;
 
+const SNAPSHOT_KEY = "dev:snapshot:run";
+const SNAPSHOT_ENABLED_KEY = "dev:snapshot:enabled";
+
+type Snapshot = {
+  date: string;
+  location: Location | null;
+  data: ApiResponse | null;
+  musicData: MusicResponse | null;
+  weatherData: ArchiveResponse | null;
+  searchId: string;
+};
+
 export default function Home() {
   const [date, setDate] = useState<Date | undefined>(devDate);
   const [location, setLocation] = useState<Location | null>(devLocation);
@@ -68,6 +81,38 @@ export default function Home() {
   const [submittedLocation, setSubmittedLocation] = useState<Location | null>(null);
   const [currentSearchId, setCurrentSearchId] = useState<string | null>(null);
   const activeSearchRef = useRef<string | null>(null);
+  const [snapshotEnabled, setSnapshotEnabled] = useState(false);
+  const [hasSnapshot, setHasSnapshot] = useState(false);
+
+  useEffect(() => {
+    if (!isDev) return;
+    const enabled = localStorage.getItem(SNAPSHOT_ENABLED_KEY) === "1";
+    setSnapshotEnabled(enabled);
+    const raw = localStorage.getItem(SNAPSHOT_KEY);
+    if (!raw) return;
+    const snap = JSON.parse(raw) as Snapshot;
+    setHasSnapshot(true);
+    if (!enabled) return;
+    const restoredDate = new Date(snap.date);
+    setDate(restoredDate);
+    setLocation(snap.location);
+    setSubmittedDate(restoredDate);
+    setSubmittedLocation(snap.location);
+    setData(snap.data);
+    setMusicData(snap.musicData);
+    setWeatherData(snap.weatherData);
+    setCurrentSearchId(snap.searchId);
+    activeSearchRef.current = snap.searchId;
+  }, []);
+
+  function handleSnapshotToggle(v: boolean) {
+    setSnapshotEnabled(v);
+    localStorage.setItem(SNAPSHOT_ENABLED_KEY, v ? "1" : "0");
+    if (!v) {
+      localStorage.removeItem(SNAPSHOT_KEY);
+      setHasSnapshot(false);
+    }
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -112,6 +157,19 @@ export default function Home() {
     else toast.error("Weather unavailable", { description: weatherR.reason?.message });
 
     setLoading(false);
+
+    if (isDev && snapshotEnabled) {
+      const snap: Snapshot = {
+        date: iso,
+        location,
+        data: checkR.status === "fulfilled" ? checkR.value : null,
+        musicData: musicR.status === "fulfilled" ? musicR.value : null,
+        weatherData: weatherR.status === "fulfilled" ? weatherR.value : null,
+        searchId,
+      };
+      localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap));
+      setHasSnapshot(true);
+    }
   }
 
   const weekday = submittedDate ? WEEKDAYS[submittedDate.getDay()] : null;
@@ -139,7 +197,6 @@ export default function Home() {
 
   const polaroidSearchId = data && currentSearchId && !loading ? currentSearchId : null;
 
-  // Tailwind requires literal class names for JIT
   const slots = [
     { side: "-left-20 md:left-8", tilt: "-rotate-6" },
     { side: "-right-20 md:right-12", tilt: "rotate-3" },
@@ -150,6 +207,13 @@ export default function Home() {
     <main className="min-h-screen text-stone-900 px-6 py-16 relative overflow-hidden">
       <NotebookPaper />
       <Doodles />
+      {isDev && (
+        <DevSnapshotToggle
+          enabled={snapshotEnabled}
+          onToggle={handleSnapshotToggle}
+          hasSnapshot={hasSnapshot}
+        />
+      )}
       {polaroidSearchId &&
         photoQueries.map((p, i) => {
           const slot = slots[i];
