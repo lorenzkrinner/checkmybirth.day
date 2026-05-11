@@ -18,12 +18,17 @@ export async function GET(req: Request) {
 
   const term = `${song} ${artist}`;
   const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=music&entity=song&limit=1`;
-
-  const res = await fetch(url);
-  const data = await res.json();
-  const hit = data.results?.[0];
-
   const query = encodeURIComponent(term);
+
+  let hit: { artworkUrl100?: string; previewUrl?: string } | undefined;
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    hit = data.results?.[0];
+  } catch (err) {
+    console.warn("[/api/track] iTunes unavailable:", err);
+  }
+
   const result: TrackResult = {
     song,
     artist,
