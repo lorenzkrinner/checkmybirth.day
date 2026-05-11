@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Caveat, Kalam } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
+import { SITE_URL } from "@/lib/site";
 
 const handwriting = Kalam({
   variable: "--font-hand",
@@ -15,10 +16,16 @@ const heading = Caveat({
   weight: ["400", "500", "600", "700"],
 });
 
+const title = "checkmybirth.day — what happened on the day you were born";
+const description =
+  "Type your birthday. Get the events, songs, and famous people of that exact day.";
+
 export const metadata: Metadata = {
-  title: "checkmybirth.day — what happened on the day you were born",
-  description:
-    "Type your birthday. Get the events, songs, and famous people of that exact day.",
+  metadataBase: new URL(SITE_URL),
+  title,
+  description,
+  openGraph: { title, description, url: SITE_URL, siteName: "checkmybirth.day", type: "website" },
+  twitter: { card: "summary_large_image", title, description },
 };
 
 export default function RootLayout({
