@@ -18,6 +18,7 @@ import { DatePicker } from "./components/DatePicker";
 import { SongCard } from "./components/SongCard";
 import { PolaroidPhoto } from "./components/PolaroidPhoto";
 import { Doodles } from "./components/Doodles";
+import { NotebookPaper } from "./components/NotebookPaper";
 
 type Song = { song: string; artist: string };
 type ApiResponse = {
@@ -167,7 +168,8 @@ export default function Home() {
   ];
 
   return (
-    <main className="notebook-paper min-h-screen text-stone-900 px-6 py-16 relative overflow-hidden">
+    <main className="min-h-screen text-stone-900 px-6 py-16 relative overflow-hidden">
+      <NotebookPaper />
       <Doodles />
       {polaroidSearchId && contentHeight > 0 &&
         photoQueries.map((p, i) => {
@@ -179,7 +181,7 @@ export default function Home() {
               query={p.query}
               caption={p.caption}
               searchId={polaroidSearchId}
-              className={`hidden xl:block absolute w-56 ${slot.side} ${slot.tilt}`}
+              className={`hidden xl:block w-56 ${slot.side} ${slot.tilt}`}
               style={{ top: `${top}px` }}
             />
           );
