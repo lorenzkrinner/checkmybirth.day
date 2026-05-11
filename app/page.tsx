@@ -19,11 +19,14 @@ import { SongCard } from "./components/SongCard";
 import { PolaroidPhoto } from "./components/PolaroidPhoto";
 import { Doodles } from "./components/Doodles";
 import { DevSnapshotToggle } from "./components/DevSnapshotToggle";
+import { InlineSourced, SourcePebbles } from "./components/SourcePebbles";
+import type { PhotoHit, PhotoResponse } from "./api/photo/route";
 
 type Song = { song: string; artist: string };
 type ApiResponse = {
   summary: string;
-  news: { headline: string; detail: string }[];
+  summarySources: string[];
+  news: { headline: string; detail: string; sources: string[] }[];
 };
 
 type MusicResponse = {
@@ -157,7 +160,7 @@ export default function Home() {
 
     setLoading(false);
 
-    if (isDev && snapshotEnabled) {
+    if (isDev) {
       const snap: Snapshot = {
         date: iso,
         location,
@@ -172,29 +175,48 @@ export default function Home() {
   }
 
   const weekday = submittedDate ? WEEKDAYS[submittedDate.getDay()] : null;
-
   const year = submittedDate?.getFullYear();
-  const newsQueries = data
-    ? data.news.map((n) => ({ query: n.headline, caption: n.headline }))
-    : [];
-  const seedQueries: ({ query: string; caption: string } | null)[] = [
-    submittedLocation
-      ? { query: `${submittedLocation.label} ${year}`, caption: submittedLocation.label }
-      : null,
-    musicData?.charts.us
-      ? {
-          query: `${musicData.charts.us.song} ${musicData.charts.us.artist}`,
-          caption: musicData.charts.us.song,
-        }
-      : null,
-    year ? { query: `world ${year}`, caption: `${year}` } : null,
-  ];
-  const photoQueries = [...seedQueries.filter(Boolean), ...newsQueries].slice(0, 5) as {
-    query: string;
-    caption: string;
-  }[];
-
   const polaroidSearchId = data && currentSearchId && !loading ? currentSearchId : null;
+
+  const [polaroidPool, setPolaroidPool] = useState<PhotoHit[]>([]);
+
+  useEffect(() => {
+    if (!polaroidSearchId) return;
+    const queries = [
+      submittedLocation ? `${submittedLocation.label} ${year}` : null,
+      musicData?.charts.us
+        ? `${musicData.charts.us.song} ${musicData.charts.us.artist}`
+        : null,
+      year ? `world ${year}` : null,
+      ...(data?.news.map((n) => n.headline) ?? []),
+    ].filter((q): q is string => !!q);
+
+    let cancelled = false;
+    Promise.all(
+      queries.map((q) =>
+        fetch(`/api/photo?q=${encodeURIComponent(q)}&sid=${polaroidSearchId}`, {
+          cache: "no-store",
+        })
+          .then((r) => r.json() as Promise<PhotoResponse>)
+          .then((j) => j.results)
+          .catch(() => [] as PhotoHit[])
+      )
+    ).then((all) => {
+      if (cancelled) return;
+      const seen = new Set<string>();
+      const pool = all.flat().filter((r) => {
+        if (seen.has(r.url)) return false;
+        seen.add(r.url);
+        return true;
+      });
+      const shuffled = [...pool].sort(() => Math.random() - 0.5);
+      setPolaroidPool(shuffled.slice(0, 5));
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [polaroidSearchId, submittedLocation, year, musicData, data]);
 
   const slots = [
     { side: "-left-20 md:left-8",   tilt: "-rotate-6", top: 180 },
@@ -216,14 +238,13 @@ export default function Home() {
         />
       )}
       {polaroidSearchId &&
-        photoQueries.map((p, i) => {
+        polaroidPool.map((p, i) => {
           const slot = slots[i];
           return (
             <PolaroidPhoto
-              key={`${polaroidSearchId}-${i}-${p.query}`}
-              query={p.query}
-              caption={p.caption}
-              searchId={polaroidSearchId}
+              key={`${polaroidSearchId}-${i}-${p.url}`}
+              url={p.url}
+              caption={p.title}
               className={`w-40 md:w-56 ${slot.side} ${slot.tilt}`}
               style={{ top: `${slot.top}px` }}
             />
@@ -262,16 +283,54 @@ export default function Home() {
         <div className="space-y-8">
           {loading && (
             <>
-              <WeatherSkeletonCard />
+              <SnapshotSkeletonCard />
+              {submittedLocation && <WeatherSkeletonCard />}
+              <NewsSkeletonCard />
               <MusicSkeletonCard />
-              <AiSkeletonCards />
             </>
+          )}
+
+          {!loading && data && (
+            <Card className="polaroid -rotate-1">
+              <CardHeader>
+                <CardTitle className="font-serif text-3xl">Snapshot</CardTitle>
+              </CardHeader>
+              <CardContent className="text-stone-700 leading-relaxed text-lg">
+                <InlineSourced text={data.summary} />
+                <SourcePebbles urls={data.summarySources} />
+              </CardContent>
+            </Card>
           )}
 
           {!loading && weatherData && submittedLocation && (
             <div className="rotate-1">
               <WeatherWidget location={submittedLocation} data={weatherData} />
             </div>
+          )}
+
+          {!loading && data && (
+            <Card className="polaroid -rotate-2">
+              <CardHeader>
+                <CardTitle className="font-serif text-3xl">In the News</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {data.news.length === 0 ? (
+                  <p className="text-stone-500">no data</p>
+                ) : (
+                  <ul className="space-y-5">
+                    {data.news.map((n, i) => (
+                      <li key={i}>
+                        <div className="font-bold text-stone-900 text-lg leading-tight">{n.headline}</div>
+                        <div className="text-stone-600 leading-relaxed">
+                          <InlineSourced text={n.detail} />
+                        </div>
+                        <SourcePebbles urls={n.sources} />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
           )}
 
           {!loading && musicData && (
@@ -286,48 +345,8 @@ export default function Home() {
                   us={musicData.charts.us}
                   regionalChartName={musicData.regionalChartName}
                 />
-                {musicData.charts.boxOfficeMovie && (
-                  <div className="mt-6 pt-4 border-t border-stone-200 flex justify-between items-baseline">
-                    <span className="text-stone-500">Box office #1</span>
-                    <span className="text-stone-900 text-lg">{musicData.charts.boxOfficeMovie}</span>
-                  </div>
-                )}
               </CardContent>
             </Card>
-          )}
-
-          {!loading && data && (
-            <>
-              <Card className="polaroid -rotate-1">
-                <CardHeader>
-                  <CardTitle className="font-serif text-3xl">Snapshot</CardTitle>
-                </CardHeader>
-                <CardContent className="text-stone-700 leading-relaxed text-lg">
-                  {data.summary}
-                </CardContent>
-              </Card>
-
-              <Card className="polaroid -rotate-2">
-                <CardHeader>
-                  <CardTitle className="font-serif text-3xl">In the News</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {data.news.length === 0 ? (
-                    <p className="text-stone-500">no data</p>
-                  ) : (
-                    <ul className="space-y-3">
-                      {data.news.map((n, i) => (
-                        <li key={i}>
-                          <div className="font-bold text-stone-900 text-lg leading-tight">{n.headline}</div>
-                          <div className="text-stone-600 leading-relaxed">{n.detail}</div>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </CardContent>
-              </Card>
-
-            </>
           )}
 
         </div>
@@ -372,30 +391,33 @@ function SinglesCarousel({
   );
 }
 
-function AiSkeletonCards() {
+function SnapshotSkeletonCard() {
   return (
-    <>
-      <Card className="polaroid -rotate-1">
-        <CardHeader>
-          <Skeleton className="h-7 w-32" />
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-5/6" />
-          <Skeleton className="h-4 w-4/6" />
-        </CardContent>
-      </Card>
-      <Card className="polaroid -rotate-2">
-        <CardHeader>
-          <Skeleton className="h-7 w-40" />
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-        </CardContent>
-      </Card>
-    </>
+    <Card className="polaroid -rotate-1">
+      <CardHeader>
+        <Skeleton className="h-7 w-32" />
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-5/6" />
+        <Skeleton className="h-4 w-4/6" />
+      </CardContent>
+    </Card>
+  );
+}
+
+function NewsSkeletonCard() {
+  return (
+    <Card className="polaroid -rotate-2">
+      <CardHeader>
+        <Skeleton className="h-7 w-40" />
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-12 w-full" />
+      </CardContent>
+    </Card>
   );
 }
 

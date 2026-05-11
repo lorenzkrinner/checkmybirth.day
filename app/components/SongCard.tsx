@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Pause, Play } from "lucide-react";
-import { SiSpotify, SiApplemusic } from "react-icons/si";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { TrackResult } from "../api/track/route";
 
@@ -65,27 +64,6 @@ export function SongCard({
 
         <div className="absolute top-3 left-3 px-2 py-1 rounded-md bg-black/55 backdrop-blur-sm text-white text-xs font-bold tracking-wide">
           {label}
-        </div>
-
-        <div className="absolute top-3 right-3 flex gap-1.5">
-          <a
-            href={track.spotifySearchUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Open in Spotify"
-            className="w-8 h-8 rounded-full bg-black/55 backdrop-blur-sm text-white hover:bg-[#1DB954] flex items-center justify-center transition"
-          >
-            <SiSpotify className="w-4 h-4" />
-          </a>
-          <a
-            href={track.appleMusicSearchUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Open in Apple Music"
-            className="w-8 h-8 rounded-full bg-black/55 backdrop-blur-sm text-white hover:bg-stone-900 flex items-center justify-center transition"
-          >
-            <SiApplemusic className="w-4 h-4" />
-          </a>
         </div>
       </div>
 

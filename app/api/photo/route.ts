@@ -1,6 +1,10 @@
-export type PhotoResult = {
-  url: string | null;
+export type PhotoHit = {
+  url: string;
   title: string;
+};
+
+export type PhotoResponse = {
+  results: PhotoHit[];
 };
 
 export const dynamic = "force-dynamic";
@@ -13,7 +17,7 @@ const noStoreHeaders = {
   Expires: "0",
 };
 
-function uncachedJson(body: PhotoResult | { error: string }, init?: ResponseInit) {
+function uncachedJson(body: PhotoResponse | { error: string }, init?: ResponseInit) {
   return Response.json(body, {
     ...init,
     headers: { ...noStoreHeaders, ...init?.headers },
@@ -25,25 +29,25 @@ export async function GET(req: Request) {
   const q = searchParams.get("q")?.trim();
   if (!q) return uncachedJson({ error: "q required" }, { status: 400 });
 
-  const url = `https://api.openverse.org/v1/images/?q=${encodeURIComponent(q)}&page_size=5&license_type=commercial&mature=false`;
+  const url = `https://api.openverse.org/v1/images/?q=${encodeURIComponent(q)}&page_size=8&license_type=commercial&mature=false`;
   let res: Response;
 
   try {
     res = await fetch(url, { cache: "no-store" });
   } catch (err) {
     console.warn("[/api/photo] Openverse unavailable:", err);
-    return uncachedJson({ url: null, title: q } satisfies PhotoResult);
+    return uncachedJson({ results: [] });
   }
 
-  if (!res.ok) {
-    return uncachedJson({ url: null, title: q } satisfies PhotoResult);
-  }
+  if (!res.ok) return uncachedJson({ results: [] });
 
   const data = await res.json();
-  const results = data.results ?? [];
-  const hit = results[Math.floor(Math.random() * results.length)];
-  return uncachedJson({
-    url: hit?.url ?? null,
-    title: hit?.title ?? q,
-  } satisfies PhotoResult);
+  const results: PhotoHit[] = (data.results ?? [])
+    .filter((hit: { url?: string }) => hit?.url)
+    .map((hit: { url: string; title?: string }) => ({
+      url: hit.url,
+      title: hit.title ?? q,
+    }));
+
+  return uncachedJson({ results });
 }
