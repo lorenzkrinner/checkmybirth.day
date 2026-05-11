@@ -18,7 +18,6 @@ import { DatePicker } from "./components/DatePicker";
 import { SongCard } from "./components/SongCard";
 import { PolaroidPhoto } from "./components/PolaroidPhoto";
 import { Doodles } from "./components/Doodles";
-import { NotebookPaper } from "./components/NotebookPaper";
 import { DevSnapshotToggle } from "./components/DevSnapshotToggle";
 
 type Song = { song: string; artist: string };
@@ -207,7 +206,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen text-stone-900 px-6 py-16 relative overflow-hidden">
-      <NotebookPaper />
+      <div aria-hidden className="notebook-paper absolute inset-0 z-0 pointer-events-none" />
       <Doodles />
       {isDev && (
         <DevSnapshotToggle
