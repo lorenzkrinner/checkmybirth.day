@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -68,17 +68,6 @@ export default function Home() {
   const [submittedLocation, setSubmittedLocation] = useState<Location | null>(null);
   const [currentSearchId, setCurrentSearchId] = useState<string | null>(null);
   const activeSearchRef = useRef<string | null>(null);
-  const contentObserverRef = useRef<ResizeObserver | null>(null);
-  const [contentHeight, setContentHeight] = useState(0);
-
-  const contentRef = useCallback((node: HTMLDivElement | null) => {
-    contentObserverRef.current?.disconnect();
-    if (!node) return;
-    const measure = () => setContentHeight(node.offsetHeight);
-    measure();
-    contentObserverRef.current = new ResizeObserver(measure);
-    contentObserverRef.current.observe(node);
-  }, []);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -143,51 +132,41 @@ export default function Home() {
       : null,
     year ? { query: `world ${year}`, caption: `${year}` } : null,
   ];
-  const photoQueries = [...seedQueries.filter(Boolean), ...newsQueries].slice(0, 6) as {
+  const photoQueries = [...seedQueries.filter(Boolean), ...newsQueries].slice(0, 3) as {
     query: string;
     caption: string;
   }[];
 
   const polaroidSearchId = data && currentSearchId && !loading ? currentSearchId : null;
 
-  if (typeof window !== "undefined" && polaroidSearchId) {
-    console.log("[polaroids] queries:", photoQueries);
-    console.log("[polaroids] contentHeight:", contentHeight);
-    console.log("[polaroids] viewport width:", window.innerWidth, "(xl needs ≥1280)");
-  }
-
-  // 6 polaroids, one per 1/6 of content height, alternating sides with varied offsets
-  // Tailwind requires full literal class names — listed explicitly so JIT picks them up
+  // Tailwind requires literal class names for JIT
   const slots = [
-    { side: "left-8", tilt: "-rotate-6" },
-    { side: "right-16", tilt: "rotate-3" },
-    { side: "left-16", tilt: "rotate-2" },
-    { side: "right-8", tilt: "-rotate-3" },
-    { side: "left-12", tilt: "rotate-6" },
-    { side: "right-12", tilt: "-rotate-2" },
+    { side: "-left-20 md:left-8", tilt: "-rotate-6" },
+    { side: "-right-20 md:right-12", tilt: "rotate-3" },
+    { side: "-left-20 md:left-16", tilt: "rotate-2" },
   ];
 
   return (
     <main className="min-h-screen text-stone-900 px-6 py-16 relative overflow-hidden">
       <NotebookPaper />
       <Doodles />
-      {polaroidSearchId && contentHeight > 0 &&
+      {polaroidSearchId &&
         photoQueries.map((p, i) => {
-          const top = contentHeight * ((i * 2 + 1) / 12);
           const slot = slots[i];
+          const topVh = ((i + 0.5) * 100) / photoQueries.length;
           return (
             <PolaroidPhoto
               key={`${polaroidSearchId}-${i}-${p.query}`}
               query={p.query}
               caption={p.caption}
               searchId={polaroidSearchId}
-              className={`hidden xl:block w-56 ${slot.side} ${slot.tilt}`}
-              style={{ top: `${top}px` }}
+              className={`w-40 md:w-56 ${slot.side} ${slot.tilt}`}
+              style={{ top: `${topVh}vh` }}
             />
           );
         })}
 
-      <div ref={contentRef} className="max-w-2xl mx-auto relative z-10">
+      <div className="max-w-2xl mx-auto relative z-10">
         <header className="mb-12 -rotate-1">
           <h1 className="text-7xl font-serif tracking-tight mb-2 leading-none">
             checkmybirth.day

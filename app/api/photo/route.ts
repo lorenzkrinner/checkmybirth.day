@@ -40,7 +40,8 @@ export async function GET(req: Request) {
   }
 
   const data = await res.json();
-  const hit = data.results?.[0];
+  const results = data.results ?? [];
+  const hit = results[Math.floor(Math.random() * results.length)];
   return uncachedJson({
     url: hit?.url ?? null,
     title: hit?.title ?? q,
