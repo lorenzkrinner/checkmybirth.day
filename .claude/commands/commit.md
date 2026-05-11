@@ -4,19 +4,10 @@
 
 1. Review the code
 2. Deslop the code
-3. Run `git diff` to retrieve only changes from the **current conversation/session** (not the entire branch, and not all working tree changes)
+3. Run `git diff` to retrieve ONLY YOUR CHANGES from the **current conversation/session**
    - If the user explicitly asks to “commit all changes”, then include the full working tree diff instead.
-   - Always default to ONLY YOUR CHANGES
 4. Generate a 40-80 chars long commit message
-5. Commit the messages and changes
-6. Push the changes
-
-## If there are other WIP/unimplemented changes
-
-If your working tree includes changes you have **not** implemented/verified yet (or changes unrelated to the current conversation), do **not** accidentally include them in the commit.
-
-1. Ask the user first whether they want you to temporarily set those changes aside (and confirm whether it’s OK to override local modifications briefly).
-2. If they agree, temporarily remove/park the unrelated changes, commit only the intended conversation/session changes, then restore/re-add the parked changes exactly as they were.
+5. Commit ONLY YOUR CHANGES
 
 ## Review
 
