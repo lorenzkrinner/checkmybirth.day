@@ -50,7 +50,7 @@ export function PolaroidPhoto({
   return (
     <div
       style={style}
-      className={`fixed z-20 bg-white pt-3 pb-10 px-3 shadow-[0_8px_24px_-6px_rgba(0,0,0,0.25)] ${className ?? ""}`}
+      className={`absolute z-20 hidden md:block bg-white pt-3 pb-10 px-3 shadow-[0_8px_24px_-6px_rgba(0,0,0,0.25)] ${className ?? ""}`}
     >
       <div className="aspect-square w-full overflow-hidden bg-stone-200">
         {/* eslint-disable-next-line @next/next/no-img-element */}

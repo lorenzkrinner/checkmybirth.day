@@ -190,7 +190,7 @@ export default function Home() {
       : null,
     year ? { query: `world ${year}`, caption: `${year}` } : null,
   ];
-  const photoQueries = [...seedQueries.filter(Boolean), ...newsQueries].slice(0, 3) as {
+  const photoQueries = [...seedQueries.filter(Boolean), ...newsQueries].slice(0, 5) as {
     query: string;
     caption: string;
   }[];
@@ -198,9 +198,11 @@ export default function Home() {
   const polaroidSearchId = data && currentSearchId && !loading ? currentSearchId : null;
 
   const slots = [
-    { side: "-left-20 md:left-8", tilt: "-rotate-6" },
-    { side: "-right-20 md:right-12", tilt: "rotate-3" },
-    { side: "-left-20 md:left-16", tilt: "rotate-2" },
+    { side: "-left-20 md:left-8",   tilt: "-rotate-6", top: 180 },
+    { side: "-right-20 md:right-12", tilt: "rotate-3",  top: 620 },
+    { side: "-left-20 md:left-16",  tilt: "rotate-2",  top: 1060 },
+    { side: "-right-20 md:right-8", tilt: "-rotate-3", top: 1500 },
+    { side: "-left-20 md:left-12",  tilt: "rotate-5",  top: 1940 },
   ];
 
   return (
@@ -217,7 +219,6 @@ export default function Home() {
       {polaroidSearchId &&
         photoQueries.map((p, i) => {
           const slot = slots[i];
-          const topVh = ((i + 0.5) * 100) / photoQueries.length;
           return (
             <PolaroidPhoto
               key={`${polaroidSearchId}-${i}-${p.query}`}
@@ -225,7 +226,7 @@ export default function Home() {
               caption={p.caption}
               searchId={polaroidSearchId}
               className={`w-40 md:w-56 ${slot.side} ${slot.tilt}`}
-              style={{ top: `${topVh}vh` }}
+              style={{ top: `${slot.top}px` }}
             />
           );
         })}
