@@ -311,7 +311,7 @@ export function Doodle({
   return (
     <div
       aria-hidden
-      className="absolute pointer-events-none z-0 text-foreground"
+      className="fixed pointer-events-none z-0 text-foreground"
       style={{
         top: `${y}px`,
         left: `calc(50% + ${x}px)`,

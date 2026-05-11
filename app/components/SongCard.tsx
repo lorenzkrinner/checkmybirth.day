@@ -21,7 +21,9 @@ export function SongCard({
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    fetch(`/api/track?song=${encodeURIComponent(song)}&artist=${encodeURIComponent(artist)}`)
+    fetch(`/api/track?song=${encodeURIComponent(song)}&artist=${encodeURIComponent(artist)}`, {
+      cache: "no-store",
+    })
       .then((r) => r.json())
       .then(setTrack);
   }, [song, artist]);

@@ -6,11 +6,13 @@ import type { PhotoResult } from "../api/photo/route";
 export function PolaroidPhoto({
   query,
   caption,
+  searchId,
   className,
   style,
 }: {
   query: string;
   caption: string;
+  searchId: string;
   className?: string;
   style?: React.CSSProperties;
 }) {
@@ -21,7 +23,10 @@ export function PolaroidPhoto({
 
     async function loadPhoto() {
       try {
-        const res = await fetch(`/api/photo?q=${encodeURIComponent(query)}`);
+        const params = new URLSearchParams({ q: query, sid: searchId });
+        const res = await fetch(`/api/photo?${params.toString()}`, {
+          cache: "no-store",
+        });
         const p = await res.json();
         if (cancelled) return;
         console.log(`[polaroid] "${query}" →`, p.url ? "HIT" : "MISS", p);
@@ -38,7 +43,7 @@ export function PolaroidPhoto({
     return () => {
       cancelled = true;
     };
-  }, [query]);
+  }, [query, searchId]);
 
   if (!photo?.url) return null;
 
