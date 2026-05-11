@@ -4,26 +4,25 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 export const alt = "checkmybirth.day — what the world looked like the day you were born";
 
-async function loadGoogleFont(family: string, weight: number, text: string) {
-  const url = `https://fonts.googleapis.com/css2?family=${family}:wght@${weight}&text=${encodeURIComponent(text)}`;
-  const css = await fetch(url, {
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    },
-  }).then((r) => r.text());
-  const match = css.match(/src: url\((.+?)\) format\('(opentype|truetype)'\)/);
-  if (!match) throw new Error(`font load failed: ${family}`);
-  return fetch(match[1]).then((r) => r.arrayBuffer());
+async function loadFont(family: string, weight: number) {
+  const css = await fetch(
+    `https://fonts.googleapis.com/css2?family=${family}:wght@${weight}&display=swap`,
+    {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)",
+      },
+    }
+  ).then((r) => r.text());
+  const url = css.match(/src: url\((.+?\.ttf)\)/)?.[1];
+  if (!url) throw new Error(`font not found: ${family}`);
+  return fetch(url).then((r) => r.arrayBuffer());
 }
 
 export default async function Image() {
-  const title = "checkmybirth.day";
-  const subtitle = "What the world looked like the day you were born.";
-
   const [caveat, kalam] = await Promise.all([
-    loadGoogleFont("Caveat", 700, title),
-    loadGoogleFont("Kalam", 400, subtitle),
+    loadFont("Caveat", 700),
+    loadFont("Kalam", 400),
   ]);
 
   return new ImageResponse(
@@ -31,39 +30,47 @@ export default async function Image() {
       <div
         style={{
           display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
           width: "100%",
           height: "100%",
-          padding: "80px 120px",
-          background: "#fdfdfb",
+          backgroundColor: "#fdfdfb",
           backgroundImage:
-            "repeating-linear-gradient(transparent 0 47px, rgba(120, 90, 40, 0.18) 47px 48px), linear-gradient(to right, transparent 119px, rgba(200, 60, 60, 0.35) 119px 121px, transparent 121px)",
-          color: "#1c1917",
-          transform: "rotate(-1deg)",
+            "linear-gradient(to right, rgba(220, 38, 38, 0.25) 0, rgba(220, 38, 38, 0.25) 3px, transparent 3px), repeating-linear-gradient(to bottom, transparent 0, transparent 47px, rgba(56, 132, 196, 0.35) 47px, rgba(56, 132, 196, 0.35) 49px)",
+          backgroundPosition: "192px 0, 0 0px",
+          backgroundRepeat: "repeat-y, repeat",
         }}
       >
         <div
           style={{
             display: "flex",
-            fontFamily: "Caveat",
-            fontSize: 220,
-            lineHeight: 1,
-            letterSpacing: "-0.02em",
+            flexDirection: "column",
+            margin: "auto",
+            padding: "0px 32px"
           }}
         >
-          {title}
-        </div>
-        <div
-          style={{
-            display: "flex",
-            fontFamily: "Kalam",
-            fontSize: 56,
-            marginTop: 24,
-            color: "#57534e",
-          }}
-        >
-          {subtitle}
+          <div
+            style={{
+              display: "flex",
+              fontFamily: "Caveat",
+              fontWeight: 700,
+              fontSize: 68,
+              lineHeight: 1,
+              letterSpacing: "-0.025em",
+              marginBottom: 24,
+              color: "#1c1917",
+            }}
+          >
+            checkmybirth.day
+          </div>
+          <div
+            style={{
+              display: "flex",
+              fontFamily: "Kalam",
+              fontSize: 40,
+              color: "#57534e",
+            }}
+          >
+            What the world looked like the day you were born.
+          </div>
         </div>
       </div>
     ),

@@ -289,7 +289,42 @@ export const svgs: Record<string, () => ReactElement<{ className?: string }>> = 
 <circle cx="112.918" cy="104.509" r="4.91803" fill="currentColor"/>
 <path d="M116.197 104.181L119.803 69.4271L127.016 72.7058" stroke="currentColor" stroke-width="5" stroke-linejoin="bevel"/>
 </svg>
-  )
+  ),
+  Headline: () => (
+    <svg width="100%" height="100%" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+      <rect width="1200" height="630" fill="#fdfdfb" />
+      <g stroke="rgba(56, 132, 196, 0.35)" strokeWidth="3">
+        {[24, 122, 220, 318, 416, 514, 612].map((y) => (
+          <line key={y} x1="0" y1={y} x2="1200" y2={y} />
+        ))}
+      </g>
+      <line x1="192" y1="0" x2="192" y2="630" stroke="rgba(220, 38, 38, 0.25)" strokeWidth="3" />
+      <g transform="rotate(-1 600 315)">
+        <text
+          x="600"
+          y="320"
+          textAnchor="middle"
+          fontFamily="var(--font-heading), 'Caveat', cursive"
+          fontWeight="700"
+          fontSize="220"
+          letterSpacing="-5"
+          fill="#1c1917"
+        >
+          checkmybirth.day
+        </text>
+        <text
+          x="600"
+          y="420"
+          textAnchor="middle"
+          fontFamily="var(--font-hand), 'Kalam', cursive"
+          fontSize="52"
+          fill="#57534e"
+        >
+          What the world looked like the day you were born.
+        </text>
+      </g>
+    </svg>
+  ),
 };
 
 export type DoodleId = keyof typeof svgs;
