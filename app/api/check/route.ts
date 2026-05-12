@@ -1,4 +1,4 @@
-import { generateText } from "ai";
+import { generateText, Output } from "ai";
 import { z } from "zod";
 import { vertex } from "@/lib/vertex";
 
@@ -14,14 +14,10 @@ const Body = z.object({
 const ResponseSchema = z.object({
   summary: z.string(),
   summarySources: z.array(z.string()),
-  news: z.array(
-    z.object({
-      headline: z.string(),
-      detail: z.string(),
-      sources: z.array(z.string()),
-    })
-  ),
 });
+
+const REDIRECT_TIMEOUT_MS = 1200;
+const MAX_REDIRECTS_TO_RESOLVE = 6;
 
 export async function POST(req: Request) {
   try {
@@ -54,33 +50,22 @@ async function handle(req: Request) {
     day: "numeric",
   });
 
-  const { text } = await generateText({
+  const { output } = await generateText({
     model: vertex(MODEL),
     tools: { google_search: vertex.tools.googleSearch({}) },
     temperature: 0.4,
-    prompt: `Research ${monthDay}, ${year} — the exact day someone was born${location ? ` in or near ${location}` : ""} — using web search. Then respond with ONLY a JSON object (no preamble, no markdown fences) matching this exact shape:
-
-{
-  "summary": "2-3 sentence vivid snapshot of what the world felt like that exact day",
-  "summarySources": ["https://...", "https://..."],
-  "news": [
-    { "headline": "string", "detail": "one sentence of context", "sources": ["https://...", "https://..."] }
-  ]
-}
+    output: Output.object({ schema: ResponseSchema }),
+    prompt: `Research ${monthDay}, ${year} — the exact day someone was born${location ? ` in or near ${location}` : ""} — using web search.
 
 Rules:
+- Return a 2-3 sentence vivid snapshot of what the world felt like that exact day.
 - If location is present, include a sentence in the summary about what that place was like where reliable.
-- "news": at least 4 entries, each a real event from THAT EXACT DAY (not "this week in history"). Use [] only if you genuinely cannot find any.
-- Write the "summary" and each news "detail" as plain prose, but anchor key facts to their sources using markdown links in the form [anchor text](https://source-url). Aim for 1–2 inline links per summary and per detail when sources support it.
-- "summarySources" and each news "sources" array: list ALL source URLs you used for that field (including the ones you inlined). 1–4 real URLs from the web search. Use the URLs your search tool returned — do not fabricate them. Empty array only if you genuinely have no source.
+- Write the summary as plain prose, but anchor key facts to their sources using markdown links in the form [anchor text](https://source-url). Aim for 1-2 inline links when sources support it.
+- summarySources must list ALL source URLs used for the summary, including inlined URLs. Use 1-4 real URLs from the web search. Empty array only if you genuinely have no source.
 - Never invent facts or URLs — only use what your web search returned.`,
   });
 
-  // Gemini sometimes wraps JSON in fences or includes preamble despite instructions
-  const match = text.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error("Model did not return JSON");
-  const parsed = ResponseSchema.parse(JSON.parse(match[0]));
-  return Response.json(await resolveGroundingRedirects(parsed));
+  return Response.json(await resolveGroundingRedirects(output));
 }
 
 type Parsed = z.infer<typeof ResponseSchema>;
@@ -91,35 +76,50 @@ const VERTEX = /vertexaisearch\.cloud\.google\.com/;
 async function resolveGroundingRedirects(parsed: Parsed): Promise<Parsed> {
   const urls = new Set<string>();
   parsed.summarySources.forEach((u) => urls.add(u));
-  parsed.news.forEach((n) => n.sources.forEach((u) => urls.add(u)));
   for (const m of parsed.summary.matchAll(MD_LINK)) urls.add(m[2]);
-  for (const n of parsed.news) for (const m of n.detail.matchAll(MD_LINK)) urls.add(m[2]);
 
-  const entries = await Promise.all(
-    [...urls].map((u) =>
-      resolveOne(u)
-        .then((r) => [u, r] as const)
-        .catch(() => [u, null] as const)
-    )
+  const vertexUrls = [...urls].filter((u) => VERTEX.test(u)).slice(0, MAX_REDIRECTS_TO_RESOLVE);
+  if (vertexUrls.length === 0) return parsed;
+
+  const entries = await withTimeout(
+    Promise.all(
+      vertexUrls.map((u) =>
+        resolveOne(u)
+          .then((r) => [u, r] as const)
+          .catch(() => [u, null] as const)
+      )
+    ),
+    REDIRECT_TIMEOUT_MS,
+    []
   );
   const map = new Map(entries);
 
   const stripDead = (s: string) =>
     s.replace(MD_LINK, (_, anchor, url) => {
+      if (!VERTEX.test(url)) return `[${anchor}](${url})`;
       const resolved = map.get(url);
       return resolved ? `[${anchor}](${resolved})` : anchor;
     });
-  const keepLive = (u: string) => map.get(u) ?? null;
+  const keepLive = (u: string) => (VERTEX.test(u) ? (map.get(u) ?? null) : u);
 
   return {
     summary: stripDead(parsed.summary),
     summarySources: parsed.summarySources.map(keepLive).filter((u): u is string => !!u),
-    news: parsed.news.map((n) => ({
-      ...n,
-      detail: stripDead(n.detail),
-      sources: n.sources.map(keepLive).filter((u): u is string => !!u),
-    })),
   };
+}
+
+async function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((resolve) => {
+        timeout = setTimeout(() => resolve(fallback), ms);
+      }),
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
 }
 
 async function resolveOne(url: string): Promise<string | null> {

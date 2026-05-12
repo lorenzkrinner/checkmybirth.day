@@ -1,16 +1,43 @@
+"use client";
+
+import * as motion from "motion/react-client";
 import { Skeleton } from "@/components/ui/skeleton";
+
+const ROOT_CLASS =
+  "absolute z-20 hidden md:block bg-white pt-3 pb-10 px-3 shadow-[0_8px_24px_-6px_rgba(0,0,0,0.25)]";
+
+type SwipeProps = {
+  fromLeft: boolean;
+  delay: number;
+  tiltDeg: number;
+};
+
+function swipeAnim({ fromLeft, delay, tiltDeg }: SwipeProps) {
+  return {
+    initial: { x: fromLeft ? -600 : 600, opacity: 0, rotate: tiltDeg },
+    animate: { x: 0, opacity: 1, rotate: tiltDeg },
+    transition: { type: "spring" as const, stiffness: 90, damping: 14, delay },
+  };
+}
 
 export function PolaroidSkeleton({
   className,
   style,
+  fromLeft,
+  delay,
+  tiltDeg,
 }: {
   className?: string;
   style?: React.CSSProperties;
+  fromLeft: boolean;
+  delay: number;
+  tiltDeg: number;
 }) {
   return (
-    <div
+    <motion.div
       style={style}
-      className={`absolute z-20 hidden md:block bg-white pt-3 pb-10 px-3 shadow-[0_8px_24px_-6px_rgba(0,0,0,0.25)] ${className ?? ""}`}
+      className={`${ROOT_CLASS} ${className ?? ""}`}
+      {...swipeAnim({ fromLeft, delay, tiltDeg })}
     >
       <div className="aspect-square w-full overflow-hidden bg-stone-200">
         <Skeleton className="w-full h-full rounded-none" />
@@ -19,7 +46,7 @@ export function PolaroidSkeleton({
         <Skeleton className="h-4 w-3/4" />
         <Skeleton className="h-4 w-1/2" />
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -29,17 +56,24 @@ export function PolaroidPhoto({
   source,
   className,
   style,
+  fromLeft,
+  delay,
+  tiltDeg,
 }: {
   url: string;
   caption: string;
   source: string;
   className?: string;
   style?: React.CSSProperties;
+  fromLeft: boolean;
+  delay: number;
+  tiltDeg: number;
 }) {
   return (
-    <div
+    <motion.div
       style={style}
-      className={`absolute z-20 hidden md:block bg-white pt-3 pb-10 px-3 shadow-[0_8px_24px_-6px_rgba(0,0,0,0.25)] ${className ?? ""}`}
+      className={`${ROOT_CLASS} ${className ?? ""}`}
+      {...swipeAnim({ fromLeft, delay, tiltDeg })}
     >
       <div className="aspect-square w-full overflow-hidden bg-stone-200">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -59,6 +93,6 @@ export function PolaroidPhoto({
       >
         {caption}
       </a>
-    </div>
+    </motion.div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import * as motion from "motion/react-client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +13,7 @@ import { PolaroidPhoto, PolaroidSkeleton } from "./components/PolaroidPhoto";
 import { Doodles } from "./components/Doodles";
 import { DevSnapshotToggle } from "./components/DevSnapshotToggle";
 import { SourcePebbles } from "./components/SourcePebbles";
-import { InlineSourced, NewsCard, NewsSkeletonCard } from "./components/NewsCard";
+import { InlineSourced } from "./components/InlineSourced";
 import { DatesCard } from "./components/DatesCard";
 import { MoonCard } from "./components/MoonCard";
 import { TopMovieCard, TopMovieSkeletonCard } from "./components/TopMovieCard";
@@ -26,7 +27,6 @@ type Song = { song: string; artist: string };
 type ApiResponse = {
   summary: string;
   summarySources: string[];
-  news: { headline: string; detail: string; sources: string[] }[];
 };
 
 type MusicResponse = {
@@ -214,7 +214,6 @@ export default function Home() {
         ? `${musicData.charts.us.song} ${musicData.charts.us.artist}`
         : null,
       year ? `world ${year}` : null,
-      ...data.news.map((n) => n.headline),
     ].filter((q): q is string => !!q);
     if (queries.length === 0) return;
     polaroidFetchedRef.current = polaroidSearchId;
@@ -249,12 +248,12 @@ export default function Home() {
   }, [polaroidSearchId, submittedLocation, year, musicData, data]);
 
   const slotStyles = [
-    { side: "xl:-left-[27rem]",  tilt: "-rotate-6" },
-    { side: "xl:-right-[27rem]", tilt: "rotate-3"  },
-    { side: "xl:-left-96",       tilt: "rotate-2"  },
-    { side: "xl:-right-96",      tilt: "-rotate-3" },
-    { side: "xl:-left-[27rem]",  tilt: "rotate-5"  },
-    { side: "xl:-right-[27rem]", tilt: "-rotate-4" },
+    { side: "xl:-left-[27rem]",  tiltDeg: -6, fromLeft: true  },
+    { side: "xl:-right-[27rem]", tiltDeg:  3, fromLeft: false },
+    { side: "xl:-left-96",       tiltDeg:  2, fromLeft: true  },
+    { side: "xl:-right-96",      tiltDeg: -3, fromLeft: false },
+    { side: "xl:-left-[27rem]",  tiltDeg:  5, fromLeft: true  },
+    { side: "xl:-right-[27rem]", tiltDeg: -4, fromLeft: false },
   ];
 
   const showPhotoSkeletons = photosLoading && polaroidPool.length === 0;
@@ -276,8 +275,11 @@ export default function Home() {
           slotStyles.map((slot, i) => (
             <PolaroidSkeleton
               key={`${polaroidSearchId}-skeleton-${i}`}
-              className={`hidden! xl:block! w-40 md:w-56 ${slot.side} ${slot.tilt}`}
+              className={`hidden! xl:block! w-40 md:w-56 ${slot.side}`}
               style={{ top: `${slotTopPx(i)}px` }}
+              fromLeft={slot.fromLeft}
+              tiltDeg={slot.tiltDeg}
+              delay={i * 0.08}
             />
           ))}
         {polaroidSearchId && !showPhotoSkeletons &&
@@ -286,10 +288,13 @@ export default function Home() {
             return (
               <PolaroidPhoto
                 key={`${polaroidSearchId}-${i}-${p.url}`}
+                fromLeft={slot.fromLeft}
+                tiltDeg={slot.tiltDeg}
+                delay={i * 0.08}
                 url={p.url}
                 caption={p.title}
                 source={p.source}
-                className={`hidden! xl:block! w-40 md:w-56 ${slot.side} ${slot.tilt}`}
+                className={`hidden! xl:block! w-40 md:w-56 ${slot.side}`}
                 style={{ top: `${slotTopPx(i)}px` }}
               />
             );
@@ -320,54 +325,76 @@ export default function Home() {
         </form>
 
         {submittedDate && (
-          <div className="text-5xl font-serif leading-tight mb-10">You were born on a {weekday}</div>
+          <SpringIn>
+            <div className="text-5xl font-serif leading-tight mb-10">You were born on a {weekday}</div>
+          </SpringIn>
         )}
 
         <div className="space-y-8 h-full">
-          {submittedDate &&
-            (data ? (
-              <Card className="polaroid -rotate-1">
-                <CardHeader>
-                  <CardTitle className="font-serif text-3xl">Snapshot</CardTitle>
-                </CardHeader>
-                <CardContent className="text-stone-700 leading-relaxed text-lg">
-                  <InlineSourced text={data.summary} />
-                  <SourcePebbles urls={data.summarySources} />
-                </CardContent>
-              </Card>
-            ) : (
-              <SnapshotSkeletonCard />
-            ))}
-          
-          {submittedDate && (data ? <NewsCard news={data.news} /> : <NewsSkeletonCard />)}
-          {submittedDate && <DatesCard birthDate={submittedDate} />}
-          {submittedLocation && submittedDate &&
-            (weatherData ? (
-              <div className="rotate-1">
-                <WeatherWidget location={submittedLocation} data={weatherData} date={submittedDate} />
-              </div>
-            ) : (
-              <WeatherSkeletonCard />
-            )
+          {submittedDate && (
+            <SpringIn>
+              {data ? (
+                <Card className="polaroid -rotate-1">
+                  <CardHeader>
+                    <CardTitle className="font-serif text-3xl">Snapshot</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-stone-700 leading-relaxed text-lg">
+                    <InlineSourced text={data.summary} />
+                    <SourcePebbles urls={data.summarySources} />
+                  </CardContent>
+                </Card>
+              ) : (
+                <SnapshotSkeletonCard />
+              )}
+            </SpringIn>
           )}
-          {submittedDate && <MoonCard birthDate={submittedDate} />}
-          {submittedDate &&
-            (factsData ? <DeathsCard facts={factsData} /> : <DeathsSkeletonCard />)
-          }
-          {submittedDate &&
-            (factsData ? <TopMovieCard facts={factsData} /> : <TopMovieSkeletonCard />)}
 
-          {submittedDate && !musicFailed &&
-            (musicData ? (
-              <MusicCard
-                globalDaily={musicData.charts.globalDaily}
-                regional={musicData.charts.regional}
-                us={musicData.charts.us}
-                regionalChartName={musicData.regionalChartName}
-              />
-            ) : (
-              <MusicSkeletonCard />
-            ))}
+          {submittedDate && (
+            <SpringIn>
+              <DatesCard birthDate={submittedDate} />
+            </SpringIn>
+          )}
+          {submittedLocation && submittedDate && (
+            <SpringIn>
+              {weatherData ? (
+                <div className="rotate-1">
+                  <WeatherWidget location={submittedLocation} data={weatherData} date={submittedDate} />
+                </div>
+              ) : (
+                <WeatherSkeletonCard />
+              )}
+            </SpringIn>
+          )}
+          {submittedDate && (
+            <SpringIn>
+              <MoonCard birthDate={submittedDate} />
+            </SpringIn>
+          )}
+          {submittedDate && (
+            <SpringIn>
+              {factsData ? <DeathsCard facts={factsData} /> : <DeathsSkeletonCard />}
+            </SpringIn>
+          )}
+          {submittedDate && (
+            <SpringIn>
+              {factsData ? <TopMovieCard facts={factsData} /> : <TopMovieSkeletonCard />}
+            </SpringIn>
+          )}
+
+          {submittedDate && !musicFailed && (
+            <SpringIn>
+              {musicData ? (
+                <MusicCard
+                  globalDaily={musicData.charts.globalDaily}
+                  regional={musicData.charts.regional}
+                  us={musicData.charts.us}
+                  regionalChartName={musicData.regionalChartName}
+                />
+              ) : (
+                <MusicSkeletonCard />
+              )}
+            </SpringIn>
+          )}
 
         </div>
 
@@ -384,11 +411,23 @@ export default function Home() {
   );
 }
 
+function SpringIn({ children }: { children: React.ReactNode }) {
+  return (
+    <motion.div
+      initial={{ y: 30, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ type: "spring", stiffness: 380, damping: 26 }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 function SnapshotSkeletonCard() {
   return (
     <Card className="polaroid -rotate-1">
       <CardHeader>
-        <ThinkingBadge label="Summarizing" />
+        <ThinkingBadge label="Searching" />
       </CardHeader>
       <CardContent className="space-y-2">
         <Skeleton className="h-4 w-full" />
