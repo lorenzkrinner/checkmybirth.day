@@ -55,7 +55,7 @@ export function SongCard({
 
   return (
     <MediaCard>
-      <MediaCardImage className="aspect-video max-h-96">
+      <MediaCardImage className="max-h-96">
         {track.artwork ? (
           <Image
             src={track.artwork}
