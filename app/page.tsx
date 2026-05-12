@@ -124,6 +124,8 @@ export default function Home() {
 
     const searchId = crypto.randomUUID();
     activeSearchRef.current = searchId;
+    polaroidFetchedRef.current = null;
+    setPolaroidPool([]);
     setCurrentSearchId(searchId);
     setSubmittedDate(date);
     setSubmittedLocation(location);
@@ -211,18 +213,21 @@ export default function Home() {
   const polaroidSearchId = currentSearchId && submittedDate ? currentSearchId : null;
 
   const [polaroidPool, setPolaroidPool] = useState<PhotoHit[]>([]);
+  const polaroidFetchedRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!polaroidSearchId) return;
+    if (!polaroidSearchId || !data) return;
+    if (polaroidFetchedRef.current === polaroidSearchId) return;
     const queries = [
       submittedLocation ? `${submittedLocation.label} ${year}` : null,
       musicData?.charts.us
         ? `${musicData.charts.us.song} ${musicData.charts.us.artist}`
         : null,
       year ? `world ${year}` : null,
-      ...(data?.news.map((n) => n.headline) ?? []),
+      ...data.news.map((n) => n.headline),
     ].filter((q): q is string => !!q);
     if (queries.length === 0) return;
+    polaroidFetchedRef.current = polaroidSearchId;
 
     let cancelled = false;
     Promise.all(
