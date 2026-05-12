@@ -52,9 +52,6 @@ function DeathCard({ death }: { death: Death }) {
             No photo
           </div>
         )}
-        <div className="absolute top-3 left-3 px-2 py-1 rounded-md bg-black/55 backdrop-blur-sm text-white text-xs font-bold tracking-wide">
-          DIED
-        </div>
       </div>
 
       <div className="p-4">
