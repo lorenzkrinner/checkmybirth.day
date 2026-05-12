@@ -18,12 +18,15 @@ export function SongCard({
   song,
   artist,
   label,
+  onInvalid,
 }: {
   song: string;
   artist: string;
   label: string;
+  onInvalid?: () => void;
 }) {
   const [track, setTrack] = useState<TrackResult | null>(null);
+  const [invalid, setInvalid] = useState(false);
   const [playing, setPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -31,15 +34,28 @@ export function SongCard({
     fetch(`/api/track?song=${encodeURIComponent(song)}&artist=${encodeURIComponent(artist)}`, {
       cache: "no-store",
     })
-      .then((r) => r.json())
-      .then(setTrack);
-  }, [song, artist]);
+      .then((r) => r.json() as Promise<TrackResult>)
+      .then((t) => {
+        if (!t.artwork && !t.appleMusicUrl) {
+          setInvalid(true);
+          onInvalid?.();
+          return;
+        }
+        setTrack(t);
+      })
+      .catch(() => {
+        setInvalid(true);
+        onInvalid?.();
+      });
+  }, [song, artist, onInvalid]);
 
   function togglePlay() {
     if (!audioRef.current) return;
     if (playing) audioRef.current.pause();
     else audioRef.current.play();
   }
+
+  if (invalid) return null;
 
   if (!track) {
     return (

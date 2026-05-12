@@ -78,6 +78,7 @@ export default function Home() {
   const [location, setLocation] = useState<Location | null>(devLocation);
   const [data, setData] = useState<ApiResponse | null>(null);
   const [musicData, setMusicData] = useState<MusicResponse | null>(null);
+  const [musicFailed, setMusicFailed] = useState(false);
   const [weatherData, setWeatherData] = useState<ArchiveResponse | null>(null);
   const [factsData, setFactsData] = useState<FactsResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -132,6 +133,7 @@ export default function Home() {
     setSubmittedLocation(location);
     setData(null);
     setMusicData(null);
+    setMusicFailed(false);
     setWeatherData(null);
     setFactsData(null);
     setLoading(true);
@@ -174,7 +176,7 @@ export default function Home() {
         setMusicData(v);
         snap.musicData = v;
       })
-      .catch((err) => active() && toast.error("Couldn't fetch the music", { description: err?.message }));
+      .catch(() => active() && setMusicFailed(true));
 
     const factsP = fetch("/api/facts", json)
       .then(async (r) => {
@@ -360,7 +362,7 @@ export default function Home() {
 
           {submittedDate && (data ? <NewsCard news={data.news} /> : <NewsSkeletonCard />)}
 
-          {submittedDate &&
+          {submittedDate && !musicFailed &&
             (musicData ? (
               <MusicCard
                 globalDaily={musicData.charts.globalDaily}
