@@ -1,6 +1,6 @@
-import { vertex } from "@ai-sdk/google-vertex";
 import { generateText } from "ai";
 import { z } from "zod";
+import { vertex } from "@/lib/vertex";
 
 const MODEL = "gemini-2.5-flash";
 

@@ -24,15 +24,14 @@ pnpm dev
 Create `.env.local`:
 
 ```
-# Vertex AI — pick ONE auth method:
-# (a) service account JSON path
-GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/sa.json
-# (b) or inline credentials, used by the AI SDK Vertex provider
+# Vertex AI
 GOOGLE_VERTEX_PROJECT=your-gcp-project-id
 GOOGLE_VERTEX_LOCATION=us-central1
+GOOGLE_CLIENT_EMAIL=your-service-account@your-gcp-project-id.iam.gserviceaccount.com
+GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
 ```
 
-In Vercel, set the same vars in Project Settings → Environment Variables. For the service account JSON, use a single-line variable (e.g. `GOOGLE_VERTEX_SERVICE_ACCOUNT_KEY` containing the raw JSON) and consult the [Vertex provider docs](https://ai-sdk.dev/providers/ai-sdk-providers/google-vertex).
+In Vercel, set the same vars in Project Settings → Environment Variables. Keep `GOOGLE_PRIVATE_KEY` as one line with escaped `\n` line breaks.
 
 ### Optional
 
