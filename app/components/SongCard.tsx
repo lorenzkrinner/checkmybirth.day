@@ -55,14 +55,14 @@ export function SongCard({
 
   return (
     <MediaCard>
-      <MediaCardImage>
+      <MediaCardImage className="aspect-video max-h-96">
         {track.artwork ? (
           <Image
             src={track.artwork}
             alt={`${track.song} cover`}
             fill
             sizes="(max-width: 768px) 100vw, 33vw"
-            className="object-cover"
+            className="object-cover object-top"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-stone-400">
@@ -74,7 +74,20 @@ export function SongCard({
 
       <MediaCardBody className="flex items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <MediaCardTitle className="truncate">{track.song}</MediaCardTitle>
+          <MediaCardTitle className="truncate">
+            {track.appleMusicUrl ? (
+              <a
+                href={track.appleMusicUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="hover:underline"
+              >
+                {track.song}
+              </a>
+            ) : (
+              track.song
+            )}
+          </MediaCardTitle>
           <MediaCardSubtitle className="truncate">{track.artist}</MediaCardSubtitle>
         </div>
         {track.previewUrl && (

@@ -28,14 +28,13 @@ export function TopMovieCard({ facts }: { facts: FactsResponse | null }) {
               <img
                 src={m.poster}
                 alt={`${m.title} poster`}
-                className="absolute inset-0 w-full h-full object-cover"
+                className="absolute inset-0 w-full h-full object-cover object-top"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-stone-400">
                 No poster
               </div>
             )}
-            <MediaCardBadge>TOP GROSSER</MediaCardBadge>
           </MediaCardImage>
 
           <MediaCardBody>

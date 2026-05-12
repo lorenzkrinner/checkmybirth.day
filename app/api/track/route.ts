@@ -3,6 +3,7 @@ export type TrackResult = {
   artist: string;
   artwork: string;
   previewUrl: string | null;
+  appleMusicUrl: string | null;
   appleMusicSearchUrl: string;
   spotifySearchUrl: string;
 };
@@ -20,7 +21,7 @@ export async function GET(req: Request) {
   const url = `https://itunes.apple.com/search?term=${encodeURIComponent(term)}&media=music&entity=song&limit=1`;
   const query = encodeURIComponent(term);
 
-  let hit: { artworkUrl100?: string; previewUrl?: string } | undefined;
+  let hit: { artworkUrl100?: string; previewUrl?: string; trackViewUrl?: string } | undefined;
   try {
     const res = await fetch(url);
     const data = await res.json();
@@ -34,6 +35,7 @@ export async function GET(req: Request) {
     artist,
     artwork: hit?.artworkUrl100?.replace("100x100", "600x600") ?? "",
     previewUrl: hit?.previewUrl ?? null,
+    appleMusicUrl: hit?.trackViewUrl ?? null,
     appleMusicSearchUrl: `https://music.apple.com/search?term=${query}`,
     spotifySearchUrl: `https://open.spotify.com/search/${query}`,
   };

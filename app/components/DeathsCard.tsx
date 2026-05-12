@@ -1,13 +1,6 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   MediaCard,
@@ -23,23 +16,14 @@ type Death = FactsResponse["deaths"][number];
 
 export function DeathsCard({ facts }: { facts: FactsResponse | null }) {
   if (!facts || facts.deaths.length === 0) return null;
+  const death = facts.deaths[0];
   return (
     <Card className="polaroid rotate-2">
       <CardHeader>
         <CardTitle className="font-serif text-3xl">Lost That Day</CardTitle>
       </CardHeader>
       <CardContent>
-        <Carousel opts={{ align: "start" }} className="w-full">
-          <CarouselContent className="-ml-3">
-            {facts.deaths.map((d) => (
-              <CarouselItem key={d.name} className="pl-3 basis-full sm:basis-1/2">
-                <DeathCard death={d} />
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          <CarouselPrevious className="left-2 disabled:hidden" />
-          <CarouselNext className="right-2 disabled:hidden" />
-        </Carousel>
+        <DeathCard death={death} />
       </CardContent>
     </Card>
   );
@@ -48,13 +32,13 @@ export function DeathsCard({ facts }: { facts: FactsResponse | null }) {
 function DeathCard({ death }: { death: Death }) {
   return (
     <MediaCard>
-      <MediaCardImage>
+      <MediaCardImage className="aspect-video max-h-96">
         {death.thumbnail ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={death.thumbnail}
             alt={`${death.name} portrait`}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-cover object-top"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-stone-400">
@@ -89,17 +73,10 @@ export function DeathsSkeletonCard() {
         <Skeleton className="h-7 w-36" />
       </CardHeader>
       <CardContent>
-        <div className="flex gap-3">
-          <div className="basis-full sm:basis-1/2 flex flex-col gap-3">
-            <Skeleton className="aspect-square w-full rounded-2xl" />
-            <Skeleton className="h-5 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
-          </div>
-          <div className="hidden sm:flex sm:basis-1/2 flex-col gap-3">
-            <Skeleton className="aspect-square w-full rounded-2xl" />
-            <Skeleton className="h-5 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
-          </div>
+        <div className="flex flex-col gap-3">
+          <Skeleton className="aspect-square w-full rounded-2xl" />
+          <Skeleton className="h-5 w-3/4" />
+          <Skeleton className="h-4 w-1/2" />
         </div>
       </CardContent>
     </Card>
