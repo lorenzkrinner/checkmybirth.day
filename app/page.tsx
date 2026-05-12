@@ -329,7 +329,7 @@ export default function Home() {
           <div className="text-5xl font-serif leading-tight mb-10">You were born on a {weekday}</div>
         )}
 
-        <div className="space-y-8">
+        <div className="space-y-8 h-full">
           {submittedDate &&
             (data ? (
               <Card className="polaroid -rotate-1">
@@ -375,6 +375,15 @@ export default function Home() {
             ))}
 
         </div>
+
+        <footer className="mt-16 text-center text-sm text-stone-600 space-x-5">
+          <span>
+            Made by <a className="underline hover:text-stone-900" href="https://x.com/lorenzkrinner"  target="_blank" rel="noopener noreferrer">Lorenz</a>
+          </span>
+          <a href="https://github.com/lorenzkrinner/checkmybirth.day" target="_blank" rel="noopener noreferrer" className="underline hover:text-stone-900">
+            Github
+          </a>
+        </footer>
       </div>
     </main>
   );
