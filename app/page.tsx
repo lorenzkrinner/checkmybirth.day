@@ -11,7 +11,8 @@ import { DatePicker } from "./components/DatePicker";
 import { PolaroidPhoto } from "./components/PolaroidPhoto";
 import { Doodles } from "./components/Doodles";
 import { DevSnapshotToggle } from "./components/DevSnapshotToggle";
-import { InlineSourced, SourcePebbles } from "./components/SourcePebbles";
+import { SourcePebbles } from "./components/SourcePebbles";
+import { InlineSourced, NewsCard, NewsSkeletonCard } from "./components/NewsCard";
 import { DatesCard } from "./components/DatesCard";
 import { MoonCard } from "./components/MoonCard";
 import { TopMovieCard, TopMovieSkeletonCard } from "./components/TopMovieCard";
@@ -351,33 +352,7 @@ export default function Home() {
           {submittedDate &&
             (factsData ? <TopMovieCard facts={factsData} /> : <TopMovieSkeletonCard />)}
 
-          {submittedDate &&
-            (data ? (
-              <Card className="polaroid -rotate-2">
-                <CardHeader>
-                  <CardTitle className="font-serif text-3xl">In the News</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {data.news.length === 0 ? (
-                    <p className="text-stone-500">no data</p>
-                  ) : (
-                    <ul className="space-y-5">
-                      {data.news.map((n, i) => (
-                        <li key={i}>
-                          <div className="font-bold text-stone-900 text-lg leading-tight">{n.headline}</div>
-                          <div className="text-stone-600 leading-relaxed">
-                            <InlineSourced text={n.detail} />
-                          </div>
-                          <SourcePebbles urls={n.sources} />
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </CardContent>
-              </Card>
-            ) : (
-              <NewsSkeletonCard />
-            ))}
+          {submittedDate && (data ? <NewsCard news={data.news} /> : <NewsSkeletonCard />)}
 
           {submittedDate &&
             (musicData ? (
@@ -414,21 +389,6 @@ function SnapshotSkeletonCard() {
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-5/6" />
         <Skeleton className="h-4 w-4/6" />
-      </CardContent>
-    </Card>
-  );
-}
-
-function NewsSkeletonCard() {
-  return (
-    <Card className="polaroid -rotate-2">
-      <CardHeader>
-        <Skeleton className="h-7 w-40" />
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <Skeleton className="h-12 w-full" />
-        <Skeleton className="h-12 w-full" />
-        <Skeleton className="h-12 w-full" />
       </CardContent>
     </Card>
   );
