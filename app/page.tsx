@@ -67,10 +67,6 @@ type Snapshot = {
   date: string;
   location: Location | null;
   data: ApiResponse | null;
-  musicData: MusicResponse | null;
-  weatherData: ArchiveResponse | null;
-  factsData: FactsResponse | null;
-  searchId: string;
 };
 
 export default function Home() {
@@ -104,25 +100,15 @@ export default function Home() {
     e.preventDefault();
     if (!date) return;
 
-    if (isDev && snapshotEnabled) {
-      const raw = localStorage.getItem(SNAPSHOT_KEY);
-      if (raw) {
-        const snap = JSON.parse(raw) as Snapshot;
-        const restoredDate = new Date(snap.date);
-        setDate(restoredDate);
-        setLocation(snap.location);
-        setSubmittedDate(restoredDate);
-        setSubmittedLocation(snap.location);
-        setData(snap.data);
-        setMusicData(snap.musicData);
-        setWeatherData(snap.weatherData);
-        setFactsData(snap.factsData);
-        setCurrentSearchId(snap.searchId);
-        activeSearchRef.current = snap.searchId;
-        setLoading(false);
-        return;
-      }
-    }
+    const cachedAi: ApiResponse | null =
+      isDev && snapshotEnabled
+        ? (() => {
+            const raw = localStorage.getItem(SNAPSHOT_KEY);
+            if (!raw) return null;
+            const snap = JSON.parse(raw) as Snapshot;
+            return snap.date === toIso(date) ? snap.data : null;
+          })()
+        : null;
 
     const searchId = crypto.randomUUID();
     activeSearchRef.current = searchId;
@@ -146,25 +132,27 @@ export default function Home() {
     const snap: Snapshot = {
       date: iso,
       location,
-      data: null,
-      musicData: null,
-      weatherData: null,
-      factsData: null,
-      searchId,
+      data: cachedAi,
     };
 
-    const checkP = fetch("/api/check", json)
-      .then(async (r) => {
-        const j = await r.json();
-        if (!r.ok) throw new Error(j.error || `check ${r.status}`);
-        return j as ApiResponse;
-      })
-      .then((v) => {
-        if (!active()) return;
-        setData(v);
-        snap.data = v;
-      })
-      .catch((err) => active() && toast.error("Couldn't fetch your birthday", { description: err?.message }));
+    if (cachedAi) {
+      setData(cachedAi);
+    }
+
+    const checkP = cachedAi
+      ? Promise.resolve()
+      : fetch("/api/check", json)
+          .then(async (r) => {
+            const j = await r.json();
+            if (!r.ok) throw new Error(j.error || `check ${r.status}`);
+            return j as ApiResponse;
+          })
+          .then((v) => {
+            if (!active()) return;
+            setData(v);
+            snap.data = v;
+          })
+          .catch((err) => active() && toast.error("Couldn't fetch your birthday", { description: err?.message }));
 
     const musicP = fetch("/api/music", json)
       .then(async (r) => {
@@ -175,7 +163,6 @@ export default function Home() {
       .then((v) => {
         if (!active()) return;
         setMusicData(v);
-        snap.musicData = v;
       })
       .catch(() => active() && setMusicFailed(true));
 
@@ -188,7 +175,6 @@ export default function Home() {
       .then((v) => {
         if (!active()) return;
         setFactsData(v);
-        snap.factsData = v;
       })
       .catch(() => {});
 
@@ -197,7 +183,6 @@ export default function Home() {
           .then((v) => {
             if (!active()) return;
             setWeatherData(v);
-            snap.weatherData = v;
           })
           .catch((err) => active() && toast.error("Weather unavailable", { description: err?.message }))
       : Promise.resolve();
