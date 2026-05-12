@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { LocationSearch, type Location } from "./components/LocationSearch";
 import { WeatherWidget, fetchWeather, type ArchiveResponse } from "./components/WeatherWidget";
 import { DatePicker } from "./components/DatePicker";
-import { PolaroidPhoto, PolaroidSkeleton } from "./components/PolaroidPhoto";
+import { PolaroidSlot } from "./components/PolaroidPhoto";
 import { Doodles } from "./components/Doodles";
 import { DevSnapshotToggle } from "./components/DevSnapshotToggle";
 import { SourcePebbles } from "./components/SourcePebbles";
@@ -114,7 +114,6 @@ export default function Home() {
     activeSearchRef.current = searchId;
     polaroidFetchedRef.current = null;
     setPolaroidPool([]);
-    setPhotosLoading(true);
     setCurrentSearchId(searchId);
     setSubmittedDate(date);
     setSubmittedLocation(location);
@@ -202,7 +201,6 @@ export default function Home() {
   const polaroidSearchId = currentSearchId && submittedDate ? currentSearchId : null;
 
   const [polaroidPool, setPolaroidPool] = useState<PhotoHit[]>([]);
-  const [photosLoading, setPhotosLoading] = useState(false);
   const polaroidFetchedRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -217,7 +215,6 @@ export default function Home() {
     ].filter((q): q is string => !!q);
     if (queries.length === 0) return;
     polaroidFetchedRef.current = polaroidSearchId;
-    setPhotosLoading(true);
 
     let cancelled = false;
     Promise.all(
@@ -239,7 +236,6 @@ export default function Home() {
       });
       const shuffled = [...pool].sort(() => Math.random() - 0.5);
       setPolaroidPool(shuffled.slice(0, 6));
-      setPhotosLoading(false);
     });
 
     return () => {
@@ -256,7 +252,6 @@ export default function Home() {
     { side: "xl:-right-[27rem]", tiltDeg: -4, fromLeft: false },
   ];
 
-  const showPhotoSkeletons = photosLoading && polaroidPool.length === 0;
   const slotTopPx = (i: number) => 180 + i * 360;
 
   return (
@@ -271,29 +266,16 @@ export default function Home() {
         />
       )}
       <div className="max-w-2xl mx-auto relative z-10">
-        {polaroidSearchId && showPhotoSkeletons &&
-          slotStyles.map((slot, i) => (
-            <PolaroidSkeleton
-              key={`${polaroidSearchId}-skeleton-${i}`}
-              className={`hidden! xl:block! w-40 md:w-56 ${slot.side}`}
-              style={{ top: `${slotTopPx(i)}px` }}
-              fromLeft={slot.fromLeft}
-              tiltDeg={slot.tiltDeg}
-              delay={i * 0.08}
-            />
-          ))}
-        {polaroidSearchId && !showPhotoSkeletons &&
-          polaroidPool.map((p, i) => {
-            const slot = slotStyles[i];
+        {polaroidSearchId &&
+          slotStyles.map((slot, i) => {
+            const hit = polaroidPool[i];
             return (
-              <PolaroidPhoto
-                key={`${polaroidSearchId}-${i}-${p.url}`}
+              <PolaroidSlot
+                key={`${polaroidSearchId}-${i}`}
+                photo={hit ? { url: hit.url, caption: hit.title, source: hit.source } : null}
                 fromLeft={slot.fromLeft}
                 tiltDeg={slot.tiltDeg}
                 delay={i * 0.08}
-                url={p.url}
-                caption={p.title}
-                source={p.source}
                 className={`hidden! xl:block! w-40 md:w-56 ${slot.side}`}
                 style={{ top: `${slotTopPx(i)}px` }}
               />
