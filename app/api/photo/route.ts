@@ -1,6 +1,7 @@
 export type PhotoHit = {
   url: string;
   title: string;
+  source: string;
 };
 
 export type PhotoResponse = {
@@ -44,9 +45,10 @@ export async function GET(req: Request) {
   const data = await res.json();
   const results: PhotoHit[] = (data.results ?? [])
     .filter((hit: { url?: string }) => hit?.url)
-    .map((hit: { url: string; title?: string }) => ({
+    .map((hit: { url: string; title?: string; foreign_landing_url?: string }) => ({
       url: hit.url,
       title: hit.title ?? q,
+      source: hit.foreign_landing_url ?? hit.url,
     }));
 
   return uncachedJson({ results });

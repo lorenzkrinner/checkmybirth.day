@@ -1,11 +1,13 @@
 export function PolaroidPhoto({
   url,
   caption,
+  source,
   className,
   style,
 }: {
   url: string;
   caption: string;
+  source: string;
   className?: string;
   style?: React.CSSProperties;
 }) {
@@ -24,9 +26,14 @@ export function PolaroidPhoto({
           referrerPolicy="no-referrer"
         />
       </div>
-      <div className="mt-3 text-center text-stone-700 font-serif text-lg leading-tight px-1 line-clamp-2">
+      <a
+        href={source}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-3 block text-center text-stone-700 font-serif text-lg leading-tight px-1 line-clamp-2 hover:underline"
+      >
         {caption}
-      </div>
+      </a>
     </div>
   );
 }

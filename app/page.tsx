@@ -263,7 +263,7 @@ export default function Home() {
   ];
 
   return (
-    <main className="min-h-screen text-stone-900 px-6 py-16 relative overflow-hidden">
+    <main className="min-h-screen text-stone-900 px-6 pt-16 pb-40 relative overflow-hidden">
       <div aria-hidden className="notebook-paper absolute inset-0 z-0 pointer-events-none" />
       <Doodles />
       {isDev && (
@@ -281,6 +281,7 @@ export default function Home() {
               key={`${polaroidSearchId}-${i}-${p.url}`}
               url={p.url}
               caption={p.title}
+              source={p.source}
               className={`w-40 md:w-56 ${slot.side} ${slot.tilt}`}
               style={{ top: `${slot.top}px` }}
             />
@@ -332,6 +333,7 @@ export default function Home() {
               <SnapshotSkeletonCard />
             ))}
 
+          {submittedDate && <DatesCard birthDate={submittedDate} />}
           {submittedLocation &&
             (weatherData ? (
               <div className="rotate-1">
@@ -340,8 +342,6 @@ export default function Home() {
             ) : (
               <WeatherSkeletonCard />
             ))}
-
-          {submittedDate && <DatesCard birthDate={submittedDate} />}
           {submittedDate && <MoonCard birthDate={submittedDate} />}
           {submittedDate && <TopMovieCard facts={factsData} />}
           {submittedDate && <DeathsCard facts={factsData} />}
