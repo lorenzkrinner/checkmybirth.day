@@ -22,7 +22,7 @@ export function TopMovieCard({ facts }: { facts: FactsResponse | null }) {
       </CardHeader>
       <CardContent>
         <MediaCard>
-          <MediaCardImage>
+          <MediaCardImage className="aspect-video max-h-96">
             {m.poster ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img

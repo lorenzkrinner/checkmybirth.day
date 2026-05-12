@@ -337,19 +337,19 @@ export default function Home() {
             ))}
 
           {submittedDate && <DatesCard birthDate={submittedDate} />}
-          {submittedLocation &&
-            (weatherData ? (
-              <div className="rotate-1">
-                <WeatherWidget location={submittedLocation} data={weatherData} />
-              </div>
-            ) : (
-              <WeatherSkeletonCard />
-            ))}
+          {submittedDate &&
+            (factsData ? <DeathsCard facts={factsData} /> : <DeathsSkeletonCard />)}
+            {submittedLocation &&
+              (weatherData ? (
+                <div className="rotate-1">
+                  <WeatherWidget location={submittedLocation} data={weatherData} />
+                </div>
+              ) : (
+                <WeatherSkeletonCard />
+              ))}
           {submittedDate && <MoonCard birthDate={submittedDate} />}
           {submittedDate &&
             (factsData ? <TopMovieCard facts={factsData} /> : <TopMovieSkeletonCard />)}
-          {submittedDate &&
-            (factsData ? <DeathsCard facts={factsData} /> : <DeathsSkeletonCard />)}
 
           {submittedDate &&
             (data ? (
