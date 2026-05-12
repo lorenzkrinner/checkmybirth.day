@@ -4,18 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LocationSearch, type Location } from "./components/LocationSearch";
 import { WeatherWidget, fetchWeather, type ArchiveResponse } from "./components/WeatherWidget";
 import { DatePicker } from "./components/DatePicker";
-import { SongCard } from "./components/SongCard";
 import { PolaroidPhoto } from "./components/PolaroidPhoto";
 import { Doodles } from "./components/Doodles";
 import { DevSnapshotToggle } from "./components/DevSnapshotToggle";
@@ -24,6 +16,7 @@ import { DatesCard } from "./components/DatesCard";
 import { MoonCard } from "./components/MoonCard";
 import { TopMovieCard } from "./components/TopMovieCard";
 import { DeathsCard } from "./components/DeathsCard";
+import { SinglesCarousel } from "./components/SinglesCarousel";
 import type { PhotoHit, PhotoResponse } from "./api/photo/route";
 import type { FactsResponse } from "./api/facts/route";
 
@@ -399,42 +392,6 @@ export default function Home() {
         </div>
       </div>
     </main>
-  );
-}
-
-function SinglesCarousel({
-  globalDaily,
-  regional,
-  us,
-  regionalChartName,
-}: {
-  globalDaily: Song | null;
-  regional: Song | null;
-  us: Song | null;
-  regionalChartName: string | null;
-}) {
-  const items = [
-    { label: "Global Top Today", song: globalDaily },
-    { label: regionalChartName ?? "Regional", song: regional },
-    { label: "Billboard Hot 100 (US)", song: us },
-  ].filter((i): i is { label: string; song: Song } => !!i.song);
-
-  if (items.length === 0) {
-    return <p className="text-stone-500">no data</p>;
-  }
-
-  return (
-    <Carousel opts={{ align: "start" }} className="w-full">
-      <CarouselContent className="-ml-3">
-        {items.map(({ label, song }) => (
-          <CarouselItem key={`${label}-${song.song}-${song.artist}`} className="pl-3 basis-full sm:basis-1/2">
-            <SongCard song={song.song} artist={song.artist} label={label} />
-          </CarouselItem>
-        ))}
-      </CarouselContent>
-      <CarouselPrevious className="left-2 disabled:hidden" />
-      <CarouselNext className="right-2 disabled:hidden" />
-    </Carousel>
   );
 }
 
