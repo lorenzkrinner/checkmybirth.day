@@ -21,6 +21,9 @@ type Props = {
 };
 
 export function MusicCard(props: Props) {
+  if (!props.globalDaily && !props.regional && !props.us) {
+    return null;
+  }
   return (
     <Card className="polaroid rotate-1">
       <CardHeader>
@@ -56,7 +59,7 @@ export function SinglesCarousel({ globalDaily, regional, us, regionalChartName }
   ].filter((i): i is { label: string; song: Song } => !!i.song);
 
   if (items.length === 0) {
-    return <p className="text-stone-500">no data</p>;
+    return null;
   }
 
   return (
