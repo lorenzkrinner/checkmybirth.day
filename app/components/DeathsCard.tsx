@@ -1,7 +1,16 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 import type { FactsResponse } from "../api/facts/route";
+
+type Death = FactsResponse["deaths"][number];
 
 export function DeathsCard({ facts }: { facts: FactsResponse | null }) {
   if (!facts || facts.deaths.length === 0) return null;
@@ -11,36 +20,60 @@ export function DeathsCard({ facts }: { facts: FactsResponse | null }) {
         <CardTitle className="font-serif text-3xl">Lost That Day</CardTitle>
       </CardHeader>
       <CardContent>
-        <ul className="space-y-3">
-          {facts.deaths.map((d) => (
-            <li key={d.name} className="flex items-start gap-3">
-              {d.thumbnail && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={d.thumbnail}
-                  alt={d.name}
-                  className="w-12 h-12 rounded-full object-cover shrink-0"
-                />
-              )}
-              <div className="leading-tight">
-                {d.url ? (
-                  <a
-                    href={d.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-bold text-stone-900 hover:underline"
-                  >
-                    {d.name}
-                  </a>
-                ) : (
-                  <span className="font-bold text-stone-900">{d.name}</span>
-                )}
-                {d.description && <div className="text-stone-600 text-sm">{d.description}</div>}
-              </div>
-            </li>
-          ))}
-        </ul>
+        <Carousel opts={{ align: "start" }} className="w-full">
+          <CarouselContent className="-ml-3">
+            {facts.deaths.map((d) => (
+              <CarouselItem key={d.name} className="pl-3 basis-full sm:basis-1/2">
+                <DeathCard death={d} />
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselPrevious className="left-2 disabled:hidden" />
+          <CarouselNext className="right-2 disabled:hidden" />
+        </Carousel>
       </CardContent>
     </Card>
+  );
+}
+
+function DeathCard({ death }: { death: Death }) {
+  return (
+    <div className="bg-white rounded-2xl overflow-hidden flex flex-col h-full">
+      <div className="relative aspect-square w-full bg-stone-100">
+        {death.thumbnail ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={death.thumbnail}
+            alt={`${death.name} portrait`}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-stone-400">
+            No photo
+          </div>
+        )}
+        <div className="absolute top-3 left-3 px-2 py-1 rounded-md bg-black/55 backdrop-blur-sm text-white text-xs font-bold tracking-wide">
+          DIED
+        </div>
+      </div>
+
+      <div className="p-4">
+        {death.url ? (
+          <a
+            href={death.url}
+            target="_blank"
+            rel="noreferrer"
+            className="font-bold text-stone-900 text-lg leading-tight hover:underline block"
+          >
+            {death.name}
+          </a>
+        ) : (
+          <div className="font-bold text-stone-900 text-lg leading-tight">{death.name}</div>
+        )}
+        {death.description && (
+          <div className="text-stone-500 mt-1 text-sm leading-snug">{death.description}</div>
+        )}
+      </div>
+    </div>
   );
 }
