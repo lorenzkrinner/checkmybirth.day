@@ -9,6 +9,14 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  MediaCard,
+  MediaCardBadge,
+  MediaCardBody,
+  MediaCardImage,
+  MediaCardSubtitle,
+  MediaCardTitle,
+} from "./MediaCard";
 import type { FactsResponse } from "../api/facts/route";
 
 type Death = FactsResponse["deaths"][number];
@@ -39,8 +47,8 @@ export function DeathsCard({ facts }: { facts: FactsResponse | null }) {
 
 function DeathCard({ death }: { death: Death }) {
   return (
-    <div className="bg-white rounded-2xl overflow-hidden flex flex-col h-full">
-      <div className="relative aspect-square w-full bg-stone-100">
+    <MediaCard>
+      <MediaCardImage>
         {death.thumbnail ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -53,26 +61,24 @@ function DeathCard({ death }: { death: Death }) {
             No photo
           </div>
         )}
-      </div>
+        <MediaCardBadge>DIED</MediaCardBadge>
+      </MediaCardImage>
 
-      <div className="p-4">
-        {death.url ? (
-          <a
-            href={death.url}
-            target="_blank"
-            rel="noreferrer"
-            className="font-bold text-stone-900 text-lg leading-tight hover:underline block"
-          >
-            {death.name}
-          </a>
-        ) : (
-          <div className="font-bold text-stone-900 text-lg leading-tight">{death.name}</div>
-        )}
+      <MediaCardBody>
+        <MediaCardTitle>
+          {death.url ? (
+            <a href={death.url} target="_blank" rel="noreferrer" className="hover:underline">
+              {death.name}
+            </a>
+          ) : (
+            death.name
+          )}
+        </MediaCardTitle>
         {death.description && (
-          <div className="text-stone-500 mt-1 text-sm leading-snug">{death.description}</div>
+          <MediaCardSubtitle className="leading-snug">{death.description}</MediaCardSubtitle>
         )}
-      </div>
-    </div>
+      </MediaCardBody>
+    </MediaCard>
   );
 }
 

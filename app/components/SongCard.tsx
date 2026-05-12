@@ -4,6 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Pause, Play } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  MediaCard,
+  MediaCardBadge,
+  MediaCardBody,
+  MediaCardImage,
+  MediaCardSubtitle,
+  MediaCardTitle,
+} from "./MediaCard";
 import type { TrackResult } from "../api/track/route";
 
 export function SongCard({
@@ -46,8 +54,8 @@ export function SongCard({
   }
 
   return (
-    <div className="bg-white rounded-2xl overflow-hidden flex flex-col h-full">
-      <div className="relative aspect-square w-full bg-stone-100">
+    <MediaCard>
+      <MediaCardImage>
         {track.artwork ? (
           <Image
             src={track.artwork}
@@ -61,18 +69,13 @@ export function SongCard({
             No artwork
           </div>
         )}
+        <MediaCardBadge>{label}</MediaCardBadge>
+      </MediaCardImage>
 
-        <div className="absolute top-3 left-3 px-2 py-1 rounded-md bg-black/55 backdrop-blur-sm text-white text-xs font-bold tracking-wide">
-          {label}
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between gap-3 p-4">
+      <MediaCardBody className="flex items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <div className="font-bold text-stone-900 text-lg leading-tight truncate">
-            {track.song}
-          </div>
-          <div className="text-stone-500 mt-0.5 truncate">{track.artist}</div>
+          <MediaCardTitle className="truncate">{track.song}</MediaCardTitle>
+          <MediaCardSubtitle className="truncate">{track.artist}</MediaCardSubtitle>
         </div>
         {track.previewUrl && (
           <>
@@ -97,7 +100,7 @@ export function SongCard({
             />
           </>
         )}
-      </div>
-    </div>
+      </MediaCardBody>
+    </MediaCard>
   );
 }
