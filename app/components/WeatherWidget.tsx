@@ -65,9 +65,11 @@ const HOURS = [0, 6, 9, 12, 15, 18, 21];
 export function WeatherWidget({
   location,
   data,
+  date,
 }: {
   location: Location;
   data: ArchiveResponse;
+  date: Date;
 }) {
   const dayCode = data.daily.weathercode[0];
   const high = Math.round(data.daily.temperature_2m_max[0]);
@@ -85,7 +87,17 @@ export function WeatherWidget({
     <div className={`rounded-2xl bg-gradient-to-b ${day.bg} text-white p-5 shadow-inner`}>
       <div className="flex justify-between items-start mb-4">
         <div>
-          <div className="text-2xl font-medium">{city}</div>
+          <div className="text-2xl font-medium">
+            {city}
+            <span className="opacity-70 text-xl font-normal">
+              {" · "}
+              {date.toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </span>
+          </div>
           <div className="text-6xl font-light tracking-tight mt-1">
             {noonTemp}°
           </div>

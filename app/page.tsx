@@ -341,10 +341,10 @@ export default function Home() {
           
           {submittedDate && (data ? <NewsCard news={data.news} /> : <NewsSkeletonCard />)}
           {submittedDate && <DatesCard birthDate={submittedDate} />}
-          {submittedLocation &&
+          {submittedLocation && submittedDate &&
             (weatherData ? (
               <div className="rotate-1">
-                <WeatherWidget location={submittedLocation} data={weatherData} />
+                <WeatherWidget location={submittedLocation} data={weatherData} date={submittedDate} />
               </div>
             ) : (
               <WeatherSkeletonCard />
