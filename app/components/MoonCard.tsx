@@ -16,7 +16,7 @@ const PHASE_FILE: Record<string, string> = {
 };
 
 type Star = {
-  variant: "Stars3" | "Stars4";
+  variant: "Star";
   top: string;
   side: "left" | "right";
   offset: string;
@@ -26,12 +26,12 @@ type Star = {
 };
 
 const STARS: Star[] = [
-  { variant: "Stars3", top: "8%",  side: "left",  offset: "6%",  size: 64, rotate: -10, opacity: 0.75 },
-  { variant: "Stars4", top: "62%", side: "left",  offset: "4%",  size: 78, rotate: 8,   opacity: 0.6 },
-  { variant: "Stars3", top: "12%", side: "right", offset: "8%",  size: 56, rotate: 18,  opacity: 0.65 },
-  { variant: "Stars4", top: "72%", side: "right", offset: "12%", size: 60, rotate: -14, opacity: 0.55 },
-  { variant: "Stars3", top: "38%", side: "right", offset: "3%",  size: 38, rotate: 32,  opacity: 0.4 },
-  { variant: "Stars4", top: "44%", side: "left",  offset: "10%", size: 34, rotate: -28, opacity: 0.4 },
+  { variant: "Star", top: "8%",  side: "left",  offset: "6%",  size: 64, rotate: -10, opacity: 0.75 },
+  { variant: "Star", top: "62%", side: "left",  offset: "4%",  size: 78, rotate: 8,   opacity: 0.6 },
+  { variant: "Star", top: "12%", side: "right", offset: "8%",  size: 56, rotate: 18,  opacity: 0.65 },
+  { variant: "Star", top: "72%", side: "right", offset: "12%", size: 60, rotate: -14, opacity: 0.55 },
+  { variant: "Star", top: "38%", side: "right", offset: "3%",  size: 38, rotate: 32,  opacity: 0.4 },
+  { variant: "Star", top: "44%", side: "left",  offset: "10%", size: 34, rotate: -28, opacity: 0.4 },
 ];
 
 export function MoonCard({ birthDate }: { birthDate: Date }) {
@@ -43,8 +43,7 @@ export function MoonCard({ birthDate }: { birthDate: Date }) {
 
   return (
     <Card
-      className="-rotate-1 relative overflow-hidden border-0 text-stone-100"
-      style={{ background: "#0a0a1a" }}
+      className="-rotate-1 relative overflow-hidden border-0 text-stone-100 bg-black"
     >
       <CardContent className="relative flex items-center justify-center py-14 min-h-72 px-0">
         {STARS.map((s, i) => (
@@ -61,7 +60,7 @@ export function MoonCard({ birthDate }: { birthDate: Date }) {
               opacity: s.opacity,
             }}
           >
-            {s.variant === "Stars3" ? svgs.Stars3() : svgs.Stars4()}
+            {s.variant === "Star" ? svgs.Star() : null}
           </div>
         ))}
 
@@ -69,15 +68,15 @@ export function MoonCard({ birthDate }: { birthDate: Date }) {
         <img
           src={`/moon/${file}.png`}
           alt={phase}
-          className="relative z-10 w-44 h-44 object-contain drop-shadow-[0_0_30px_rgba(255,240,200,0.18)]"
+          className="relative z-10 w-44 h-44 object-contain"
         />
       </CardContent>
 
+      <div className="absolute top-4 left-4 z-20 text-right">
+        <div className="font-serif text-lg text-stone-100 leading-tight">Moon That Day</div>
+      </div>
       <div className="absolute bottom-3 right-4 z-20 text-right">
-        <div className="font-serif text-xl text-stone-100 leading-tight">Moon That Night</div>
-        <div className="text-xs text-stone-400 mt-0.5">
-          {phase} · {illumination}% lit
-        </div>
+        <div className="font-serif text-sm text-stone-200 leading-tight">{phase} Moon · {illumination}% lit</div>
       </div>
     </Card>
   );
