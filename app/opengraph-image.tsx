@@ -4,27 +4,7 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 export const alt = "checkmybirth.day — what the world looked like the day you were born";
 
-async function loadFont(family: string, weight: number) {
-  const css = await fetch(
-    `https://fonts.googleapis.com/css2?family=${family}:wght@${weight}&display=swap`,
-    {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)",
-      },
-    }
-  ).then((r) => r.text());
-  const url = css.match(/src: url\((.+?\.ttf)\)/)?.[1];
-  if (!url) throw new Error(`font not found: ${family}`);
-  return fetch(url).then((r) => r.arrayBuffer());
-}
-
 export default async function Image() {
-  const [caveat, kalam] = await Promise.all([
-    loadFont("Caveat", 700),
-    loadFont("Kalam", 400),
-  ]);
-
   return new ImageResponse(
     (
       <div
@@ -50,7 +30,7 @@ export default async function Image() {
           <div
             style={{
               display: "flex",
-              fontFamily: "Caveat",
+              fontFamily: "sans-serif",
               fontWeight: 700,
               fontSize: 68,
               lineHeight: 1,
@@ -64,7 +44,7 @@ export default async function Image() {
           <div
             style={{
               display: "flex",
-              fontFamily: "Kalam",
+              fontFamily: "sans-serif",
               fontSize: 40,
               color: "#57534e",
             }}
@@ -76,10 +56,6 @@ export default async function Image() {
     ),
     {
       ...size,
-      fonts: [
-        { name: "Caveat", data: caveat, style: "normal", weight: 700 },
-        { name: "Kalam", data: kalam, style: "normal", weight: 400 },
-      ],
     }
   );
 }
