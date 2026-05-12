@@ -1,6 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { FactsResponse } from "../api/facts/route";
 
 export function TopMovieCard({ facts }: { facts: FactsResponse | null }) {
@@ -25,6 +26,22 @@ export function TopMovieCard({ facts }: { facts: FactsResponse | null }) {
           >
             {m.title}
           </a>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function TopMovieSkeletonCard() {
+  return (
+    <Card className="polaroid rotate-2">
+      <CardHeader>
+        <Skeleton className="h-7 w-44" />
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center gap-5">
+          <Skeleton className="w-28 h-40 rounded" />
+          <Skeleton className="h-7 w-40" />
         </div>
       </CardContent>
     </Card>

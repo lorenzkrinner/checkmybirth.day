@@ -8,6 +8,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { FactsResponse } from "../api/facts/route";
 
 type Death = FactsResponse["deaths"][number];
@@ -72,5 +73,29 @@ function DeathCard({ death }: { death: Death }) {
         )}
       </div>
     </div>
+  );
+}
+
+export function DeathsSkeletonCard() {
+  return (
+    <Card className="polaroid rotate-2">
+      <CardHeader>
+        <Skeleton className="h-7 w-36" />
+      </CardHeader>
+      <CardContent>
+        <div className="flex gap-3">
+          <div className="basis-full sm:basis-1/2 flex flex-col gap-3">
+            <Skeleton className="aspect-square w-full rounded-2xl" />
+            <Skeleton className="h-5 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+          </div>
+          <div className="hidden sm:flex sm:basis-1/2 flex-col gap-3">
+            <Skeleton className="aspect-square w-full rounded-2xl" />
+            <Skeleton className="h-5 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

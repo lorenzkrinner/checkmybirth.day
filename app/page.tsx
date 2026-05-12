@@ -14,8 +14,8 @@ import { DevSnapshotToggle } from "./components/DevSnapshotToggle";
 import { InlineSourced, SourcePebbles } from "./components/SourcePebbles";
 import { DatesCard } from "./components/DatesCard";
 import { MoonCard } from "./components/MoonCard";
-import { TopMovieCard } from "./components/TopMovieCard";
-import { DeathsCard } from "./components/DeathsCard";
+import { TopMovieCard, TopMovieSkeletonCard } from "./components/TopMovieCard";
+import { DeathsCard, DeathsSkeletonCard } from "./components/DeathsCard";
 import { SinglesCarousel } from "./components/SinglesCarousel";
 import type { PhotoHit, PhotoResponse } from "./api/photo/route";
 import type { FactsResponse } from "./api/facts/route";
@@ -242,7 +242,7 @@ export default function Home() {
         return true;
       });
       const shuffled = [...pool].sort(() => Math.random() - 0.5);
-      setPolaroidPool(shuffled.slice(0, 5));
+      setPolaroidPool(shuffled.slice(0, 6));
     });
 
     return () => {
@@ -250,16 +250,35 @@ export default function Home() {
     };
   }, [polaroidSearchId, submittedLocation, year, musicData, data]);
 
-  const slots = [
-    { side: "-left-20 md:left-8",   tilt: "-rotate-6", top: 180 },
-    { side: "-right-20 md:right-12", tilt: "rotate-3",  top: 620 },
-    { side: "-left-20 md:left-16",  tilt: "rotate-2",  top: 1060 },
-    { side: "-right-20 md:right-8", tilt: "-rotate-3", top: 1500 },
-    { side: "-left-20 md:left-12",  tilt: "rotate-5",  top: 1940 },
+  const slotStyles = [
+    { side: "-left-20 md:left-8",    tilt: "-rotate-6" },
+    { side: "-right-20 md:right-12", tilt: "rotate-3"  },
+    { side: "-left-20 md:left-16",   tilt: "rotate-2"  },
+    { side: "-right-20 md:right-8",  tilt: "-rotate-3" },
+    { side: "-left-20 md:left-12",   tilt: "rotate-5"  },
+    { side: "-right-20 md:right-16", tilt: "-rotate-4" },
   ];
 
+  const mainRef = useRef<HTMLElement | null>(null);
+  const [mainHeight, setMainHeight] = useState(0);
+
+  useEffect(() => {
+    if (!mainRef.current) return;
+    const el = mainRef.current;
+    const ro = new ResizeObserver(([entry]) => setMainHeight(entry.contentRect.height));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const PAD_TOP = 280;
+  const PAD_BOTTOM = 280;
+  const n = polaroidPool.length;
+  const usable = Math.max(0, mainHeight - PAD_TOP - PAD_BOTTOM);
+  const slotTop = (i: number) =>
+    n <= 1 ? PAD_TOP : PAD_TOP + (i / (n - 1)) * usable;
+
   return (
-    <main className="min-h-screen text-stone-900 px-6 pt-16 pb-40 relative overflow-hidden">
+    <main ref={mainRef} className="min-h-screen text-stone-900 px-6 pt-16 pb-40 relative overflow-hidden">
       <div aria-hidden className="notebook-paper absolute inset-0 z-0 pointer-events-none" />
       <Doodles />
       {isDev && (
@@ -270,8 +289,9 @@ export default function Home() {
         />
       )}
       {polaroidSearchId &&
+        mainHeight > 0 &&
         polaroidPool.map((p, i) => {
-          const slot = slots[i];
+          const slot = slotStyles[i];
           return (
             <PolaroidPhoto
               key={`${polaroidSearchId}-${i}-${p.url}`}
@@ -279,7 +299,7 @@ export default function Home() {
               caption={p.title}
               source={p.source}
               className={`w-40 md:w-56 ${slot.side} ${slot.tilt}`}
-              style={{ top: `${slot.top}px` }}
+              style={{ top: `${slotTop(i)}px` }}
             />
           );
         })}
@@ -339,8 +359,10 @@ export default function Home() {
               <WeatherSkeletonCard />
             ))}
           {submittedDate && <MoonCard birthDate={submittedDate} />}
-          {submittedDate && <TopMovieCard facts={factsData} />}
-          {submittedDate && <DeathsCard facts={factsData} />}
+          {submittedDate &&
+            (factsData ? <TopMovieCard facts={factsData} /> : <TopMovieSkeletonCard />)}
+          {submittedDate &&
+            (factsData ? <DeathsCard facts={factsData} /> : <DeathsSkeletonCard />)}
 
           {submittedDate &&
             (data ? (
