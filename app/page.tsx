@@ -81,6 +81,7 @@ export default function Home() {
   const [submittedDate, setSubmittedDate] = useState<Date | null>(null);
   const [submittedLocation, setSubmittedLocation] = useState<Location | null>(null);
   const [currentSearchId, setCurrentSearchId] = useState<string | null>(null);
+  const [revealedCount, setRevealedCount] = useState(0);
   const activeSearchRef = useRef<string | null>(null);
   const [snapshotEnabled, setSnapshotEnabled] = useState(false);
   const [hasSnapshot, setHasSnapshot] = useState(false);
@@ -114,6 +115,7 @@ export default function Home() {
     activeSearchRef.current = searchId;
     polaroidFetchedRef.current = null;
     setPolaroidPool([]);
+    setRevealedCount(0);
     setCurrentSearchId(searchId);
     setSubmittedDate(date);
     setSubmittedLocation(location);
@@ -196,6 +198,19 @@ export default function Home() {
     });
   }
 
+  useEffect(() => {
+    if (!data) return;
+    const TOTAL = 13;
+    const STEP_MS = 150;
+    let i = 0;
+    const id = setInterval(() => {
+      i++;
+      setRevealedCount(i);
+      if (i >= TOTAL) clearInterval(id);
+    }, STEP_MS);
+    return () => clearInterval(id);
+  }, [data]);
+
   const weekday = submittedDate ? WEEKDAYS[submittedDate.getDay()] : null;
   const year = submittedDate?.getFullYear();
   const polaroidSearchId = currentSearchId && submittedDate ? currentSearchId : null;
@@ -269,10 +284,11 @@ export default function Home() {
         {polaroidSearchId &&
           slotStyles.map((slot, i) => {
             const hit = polaroidPool[i];
+            const reveal = revealedCount > i * 2;
             return (
               <PolaroidSlot
                 key={`${polaroidSearchId}-${i}`}
-                photo={hit ? { url: hit.url, caption: hit.title, source: hit.source } : null}
+                photo={reveal && hit ? { url: hit.url, caption: hit.title, source: hit.source } : null}
                 fromLeft={slot.fromLeft}
                 tiltDeg={slot.tiltDeg}
                 delay={i * 0.08}
@@ -315,7 +331,7 @@ export default function Home() {
         <div className="space-y-8 h-full">
           {submittedDate && (
             <SpringIn>
-              {data ? (
+              {revealedCount > 1 && data ? (
                 <Card className="polaroid -rotate-1">
                   <CardHeader>
                     <CardTitle className="font-serif text-3xl">Snapshot</CardTitle>
@@ -333,12 +349,12 @@ export default function Home() {
 
           {submittedDate && (
             <SpringIn>
-              {data ? <DatesCard birthDate={submittedDate} /> : <DatesSkeletonCard />}
+              {revealedCount > 3 && data ? <DatesCard birthDate={submittedDate} /> : <DatesSkeletonCard />}
             </SpringIn>
           )}
           {submittedLocation && submittedDate && (
             <SpringIn>
-              {data && weatherData ? (
+              {revealedCount > 5 && data && weatherData ? (
                 <div className="rotate-1">
                   <WeatherWidget location={submittedLocation} data={weatherData} date={submittedDate} />
                 </div>
@@ -349,23 +365,23 @@ export default function Home() {
           )}
           {submittedDate && (
             <SpringIn>
-              {data ? <MoonCard birthDate={submittedDate} /> : <MoonSkeletonCard />}
+              {revealedCount > 7 && data ? <MoonCard birthDate={submittedDate} /> : <MoonSkeletonCard />}
             </SpringIn>
           )}
           {submittedDate && (
             <SpringIn>
-              {data && factsData ? <DeathsCard facts={factsData} /> : <DeathsSkeletonCard />}
+              {revealedCount > 9 && data && factsData ? <DeathsCard facts={factsData} /> : <DeathsSkeletonCard />}
             </SpringIn>
           )}
           {submittedDate && (
             <SpringIn>
-              {data && factsData ? <TopMovieCard facts={factsData} /> : <TopMovieSkeletonCard />}
+              {revealedCount > 11 && data && factsData ? <TopMovieCard facts={factsData} /> : <TopMovieSkeletonCard />}
             </SpringIn>
           )}
 
           {submittedDate && !musicFailed && (
             <SpringIn>
-              {data && musicData ? (
+              {revealedCount > 12 && data && musicData ? (
                 <MusicCard
                   globalDaily={musicData.charts.globalDaily}
                   regional={musicData.charts.regional}
