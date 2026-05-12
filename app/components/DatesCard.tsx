@@ -47,7 +47,7 @@ export function DatesCard({ birthDate }: { birthDate: Date }) {
 function Stat({ value, label }: { value: string; label: string }) {
   return (
     <div>
-      <div className="font-serif text-3xl text-stone-900">{value}</div>
+      <div className="font-serif text-6xl text-stone-900">{value}</div>
       <div className="text-xs text-stone-500 mt-1">{label}</div>
     </div>
   );
