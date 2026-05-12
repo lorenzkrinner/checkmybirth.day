@@ -20,7 +20,9 @@ import { PolaroidPhoto } from "./components/PolaroidPhoto";
 import { Doodles } from "./components/Doodles";
 import { DevSnapshotToggle } from "./components/DevSnapshotToggle";
 import { InlineSourced, SourcePebbles } from "./components/SourcePebbles";
+import { DatesCard, MoonCard, TopMovieCard, DeathsCard } from "./components/FactsCard";
 import type { PhotoHit, PhotoResponse } from "./api/photo/route";
+import type { FactsResponse } from "./api/facts/route";
 
 type Song = { song: string; artist: string };
 type ApiResponse = {
@@ -69,6 +71,7 @@ type Snapshot = {
   data: ApiResponse | null;
   musicData: MusicResponse | null;
   weatherData: ArchiveResponse | null;
+  factsData: FactsResponse | null;
   searchId: string;
 };
 
@@ -78,6 +81,7 @@ export default function Home() {
   const [data, setData] = useState<ApiResponse | null>(null);
   const [musicData, setMusicData] = useState<MusicResponse | null>(null);
   const [weatherData, setWeatherData] = useState<ArchiveResponse | null>(null);
+  const [factsData, setFactsData] = useState<FactsResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [submittedDate, setSubmittedDate] = useState<Date | null>(null);
   const [submittedLocation, setSubmittedLocation] = useState<Location | null>(null);
@@ -113,6 +117,7 @@ export default function Home() {
         setData(snap.data);
         setMusicData(snap.musicData);
         setWeatherData(snap.weatherData);
+        setFactsData(snap.factsData);
         setCurrentSearchId(snap.searchId);
         activeSearchRef.current = snap.searchId;
         setLoading(false);
@@ -128,55 +133,85 @@ export default function Home() {
     setData(null);
     setMusicData(null);
     setWeatherData(null);
+    setFactsData(null);
     setLoading(true);
 
     const iso = toIso(date);
     const payload = { date: iso, location: location?.label ?? null };
     const json = { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) };
+    const active = () => activeSearchRef.current === searchId;
+    const snap: Snapshot = {
+      date: iso,
+      location,
+      data: null,
+      musicData: null,
+      weatherData: null,
+      factsData: null,
+      searchId,
+    };
 
-    const checkP = fetch("/api/check", json).then(async (r) => {
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.error || `check ${r.status}`);
-      return j as ApiResponse;
+    const checkP = fetch("/api/check", json)
+      .then(async (r) => {
+        const j = await r.json();
+        if (!r.ok) throw new Error(j.error || `check ${r.status}`);
+        return j as ApiResponse;
+      })
+      .then((v) => {
+        if (!active()) return;
+        setData(v);
+        snap.data = v;
+      })
+      .catch((err) => active() && toast.error("Couldn't fetch your birthday", { description: err?.message }));
+
+    const musicP = fetch("/api/music", json)
+      .then(async (r) => {
+        const j = await r.json();
+        if (!r.ok) throw new Error(j.error || `music ${r.status}`);
+        return j as MusicResponse;
+      })
+      .then((v) => {
+        if (!active()) return;
+        setMusicData(v);
+        snap.musicData = v;
+      })
+      .catch((err) => active() && toast.error("Couldn't fetch the music", { description: err?.message }));
+
+    const factsP = fetch("/api/facts", json)
+      .then(async (r) => {
+        const j = await r.json();
+        if (!r.ok) throw new Error(j.error || `facts ${r.status}`);
+        return j as FactsResponse;
+      })
+      .then((v) => {
+        if (!active()) return;
+        setFactsData(v);
+        snap.factsData = v;
+      })
+      .catch(() => {});
+
+    const weatherP = location
+      ? fetchWeather(location, iso)
+          .then((v) => {
+            if (!active()) return;
+            setWeatherData(v);
+            snap.weatherData = v;
+          })
+          .catch((err) => active() && toast.error("Weather unavailable", { description: err?.message }))
+      : Promise.resolve();
+
+    Promise.allSettled([checkP, musicP, factsP, weatherP]).then(() => {
+      if (!active()) return;
+      setLoading(false);
+      if (isDev) {
+        localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap));
+        setHasSnapshot(true);
+      }
     });
-    const musicP = fetch("/api/music", json).then(async (r) => {
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.error || `music ${r.status}`);
-      return j as MusicResponse;
-    });
-    const weatherP = location ? fetchWeather(location, iso) : Promise.resolve(null);
-
-    const [checkR, musicR, weatherR] = await Promise.allSettled([checkP, musicP, weatherP]);
-    if (activeSearchRef.current !== searchId) return;
-
-    if (checkR.status === "fulfilled") setData(checkR.value);
-    else toast.error("Couldn't fetch your birthday", { description: checkR.reason?.message });
-
-    if (musicR.status === "fulfilled") setMusicData(musicR.value);
-    else toast.error("Couldn't fetch the music", { description: musicR.reason?.message });
-
-    if (weatherR.status === "fulfilled") setWeatherData(weatherR.value);
-    else toast.error("Weather unavailable", { description: weatherR.reason?.message });
-
-    setLoading(false);
-
-    if (isDev) {
-      const snap: Snapshot = {
-        date: iso,
-        location,
-        data: checkR.status === "fulfilled" ? checkR.value : null,
-        musicData: musicR.status === "fulfilled" ? musicR.value : null,
-        weatherData: weatherR.status === "fulfilled" ? weatherR.value : null,
-        searchId,
-      };
-      localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snap));
-      setHasSnapshot(true);
-    }
   }
 
   const weekday = submittedDate ? WEEKDAYS[submittedDate.getDay()] : null;
   const year = submittedDate?.getFullYear();
-  const polaroidSearchId = data && currentSearchId && !loading ? currentSearchId : null;
+  const polaroidSearchId = currentSearchId && submittedDate ? currentSearchId : null;
 
   const [polaroidPool, setPolaroidPool] = useState<PhotoHit[]>([]);
 
@@ -190,6 +225,7 @@ export default function Home() {
       year ? `world ${year}` : null,
       ...(data?.news.map((n) => n.headline) ?? []),
     ].filter((q): q is string => !!q);
+    if (queries.length === 0) return;
 
     let cancelled = false;
     Promise.all(
@@ -281,73 +317,81 @@ export default function Home() {
         )}
 
         <div className="space-y-8">
-          {loading && (
-            <>
+          {submittedDate &&
+            (data ? (
+              <Card className="polaroid -rotate-1">
+                <CardHeader>
+                  <CardTitle className="font-serif text-3xl">Snapshot</CardTitle>
+                </CardHeader>
+                <CardContent className="text-stone-700 leading-relaxed text-lg">
+                  <InlineSourced text={data.summary} />
+                  <SourcePebbles urls={data.summarySources} />
+                </CardContent>
+              </Card>
+            ) : (
               <SnapshotSkeletonCard />
-              {submittedLocation && <WeatherSkeletonCard />}
+            ))}
+
+          {submittedLocation &&
+            (weatherData ? (
+              <div className="rotate-1">
+                <WeatherWidget location={submittedLocation} data={weatherData} />
+              </div>
+            ) : (
+              <WeatherSkeletonCard />
+            ))}
+
+          {submittedDate && <DatesCard birthDate={submittedDate} />}
+          {submittedDate && <MoonCard birthDate={submittedDate} />}
+          {submittedDate && <TopMovieCard facts={factsData} />}
+          {submittedDate && <DeathsCard facts={factsData} />}
+
+          {submittedDate &&
+            (data ? (
+              <Card className="polaroid -rotate-2">
+                <CardHeader>
+                  <CardTitle className="font-serif text-3xl">In the News</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {data.news.length === 0 ? (
+                    <p className="text-stone-500">no data</p>
+                  ) : (
+                    <ul className="space-y-5">
+                      {data.news.map((n, i) => (
+                        <li key={i}>
+                          <div className="font-bold text-stone-900 text-lg leading-tight">{n.headline}</div>
+                          <div className="text-stone-600 leading-relaxed">
+                            <InlineSourced text={n.detail} />
+                          </div>
+                          <SourcePebbles urls={n.sources} />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
               <NewsSkeletonCard />
+            ))}
+
+          {submittedDate &&
+            (musicData ? (
+              <Card className="polaroid rotate-1">
+                <CardHeader>
+                  <CardTitle className="font-serif text-3xl">Number One That Week</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <SinglesCarousel
+                    globalDaily={musicData.charts.globalDaily}
+                    regional={musicData.charts.regional}
+                    us={musicData.charts.us}
+                    regionalChartName={musicData.regionalChartName}
+                  />
+                </CardContent>
+              </Card>
+            ) : (
               <MusicSkeletonCard />
-            </>
-          )}
-
-          {!loading && data && (
-            <Card className="polaroid -rotate-1">
-              <CardHeader>
-                <CardTitle className="font-serif text-3xl">Snapshot</CardTitle>
-              </CardHeader>
-              <CardContent className="text-stone-700 leading-relaxed text-lg">
-                <InlineSourced text={data.summary} />
-                <SourcePebbles urls={data.summarySources} />
-              </CardContent>
-            </Card>
-          )}
-
-          {!loading && weatherData && submittedLocation && (
-            <div className="rotate-1">
-              <WeatherWidget location={submittedLocation} data={weatherData} />
-            </div>
-          )}
-
-          {!loading && data && (
-            <Card className="polaroid -rotate-2">
-              <CardHeader>
-                <CardTitle className="font-serif text-3xl">In the News</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {data.news.length === 0 ? (
-                  <p className="text-stone-500">no data</p>
-                ) : (
-                  <ul className="space-y-5">
-                    {data.news.map((n, i) => (
-                      <li key={i}>
-                        <div className="font-bold text-stone-900 text-lg leading-tight">{n.headline}</div>
-                        <div className="text-stone-600 leading-relaxed">
-                          <InlineSourced text={n.detail} />
-                        </div>
-                        <SourcePebbles urls={n.sources} />
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {!loading && musicData && (
-            <Card className="polaroid rotate-1">
-              <CardHeader>
-                <CardTitle className="font-serif text-3xl">Number One That Week</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <SinglesCarousel
-                  globalDaily={musicData.charts.globalDaily}
-                  regional={musicData.charts.regional}
-                  us={musicData.charts.us}
-                  regionalChartName={musicData.regionalChartName}
-                />
-              </CardContent>
-            </Card>
-          )}
+            ))}
 
         </div>
       </div>
