@@ -249,20 +249,16 @@ export default function Home() {
   }, [polaroidSearchId, submittedLocation, year, musicData, data]);
 
   const slotStyles = [
-    { side: "-left-20 md:left-8",    tilt: "-rotate-6" },
-    { side: "-right-20 md:right-12", tilt: "rotate-3"  },
-    { side: "-left-20 md:left-16",   tilt: "rotate-2"  },
-    { side: "-right-20 md:right-8",  tilt: "-rotate-3" },
-    { side: "-left-20 md:left-12",   tilt: "rotate-5"  },
-    { side: "-right-20 md:right-16", tilt: "-rotate-4" },
+    { side: "xl:-left-[27rem]",  tilt: "-rotate-6" },
+    { side: "xl:-right-[27rem]", tilt: "rotate-3"  },
+    { side: "xl:-left-96",       tilt: "rotate-2"  },
+    { side: "xl:-right-96",      tilt: "-rotate-3" },
+    { side: "xl:-left-[27rem]",  tilt: "rotate-5"  },
+    { side: "xl:-right-[27rem]", tilt: "-rotate-4" },
   ];
 
-  const TOP_PCT = 8;
-  const BOTTOM_PCT = 88;
   const showPhotoSkeletons = photosLoading && polaroidPool.length === 0;
-  const visibleCount = showPhotoSkeletons ? slotStyles.length : polaroidPool.length;
-  const slotTopPct = (i: number) =>
-    visibleCount <= 1 ? TOP_PCT : TOP_PCT + (i / (visibleCount - 1)) * (BOTTOM_PCT - TOP_PCT);
+  const slotTopPx = (i: number) => 180 + i * 360;
 
   return (
     <main className="min-h-screen text-stone-900 px-6 pt-16 pb-24 relative overflow-hidden">
@@ -275,30 +271,30 @@ export default function Home() {
           hasSnapshot={hasSnapshot}
         />
       )}
-      {polaroidSearchId && showPhotoSkeletons &&
-        slotStyles.map((slot, i) => (
-          <PolaroidSkeleton
-            key={`${polaroidSearchId}-skeleton-${i}`}
-            className={`hidden! xl:block! w-40 md:w-56 ${slot.side} ${slot.tilt}`}
-            style={{ top: `${slotTopPct(i)}%` }}
-          />
-        ))}
-      {polaroidSearchId && !showPhotoSkeletons &&
-        polaroidPool.map((p, i) => {
-          const slot = slotStyles[i];
-          return (
-            <PolaroidPhoto
-              key={`${polaroidSearchId}-${i}-${p.url}`}
-              url={p.url}
-              caption={p.title}
-              source={p.source}
-              className={`hidden! xl:block! w-40 md:w-56 ${slot.side} ${slot.tilt}`}
-              style={{ top: `${slotTopPct(i)}%` }}
-            />
-          );
-        })}
-
       <div className="max-w-2xl mx-auto relative z-10">
+        {polaroidSearchId && showPhotoSkeletons &&
+          slotStyles.map((slot, i) => (
+            <PolaroidSkeleton
+              key={`${polaroidSearchId}-skeleton-${i}`}
+              className={`hidden! xl:block! w-40 md:w-56 ${slot.side} ${slot.tilt}`}
+              style={{ top: `${slotTopPx(i)}px` }}
+            />
+          ))}
+        {polaroidSearchId && !showPhotoSkeletons &&
+          polaroidPool.map((p, i) => {
+            const slot = slotStyles[i];
+            return (
+              <PolaroidPhoto
+                key={`${polaroidSearchId}-${i}-${p.url}`}
+                url={p.url}
+                caption={p.title}
+                source={p.source}
+                className={`hidden! xl:block! w-40 md:w-56 ${slot.side} ${slot.tilt}`}
+                style={{ top: `${slotTopPx(i)}px` }}
+              />
+            );
+          })}
+
         <header className="mb-12 -rotate-1">
           <h1 className="text-7xl font-serif tracking-tight mb-2 leading-none">
             checkmybirth.day
@@ -425,4 +421,3 @@ function WeatherSkeletonCard() {
     </Card>
   );
 }
-
