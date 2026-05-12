@@ -37,7 +37,7 @@ type NewsItem = { headline: string; detail: string; sources: string[] };
 
 export function NewsCard({ news }: { news: NewsItem[] }) {
   return (
-    <Card className="polaroid -rotate-2">
+    <Card className="polaroid rotate-1">
       <CardHeader>
         <CardTitle className="font-serif text-3xl">In the News</CardTitle>
       </CardHeader>
@@ -64,9 +64,9 @@ export function NewsCard({ news }: { news: NewsItem[] }) {
 
 export function NewsSkeletonCard() {
   return (
-    <Card className="polaroid -rotate-2">
+    <Card className="polaroid rotate-1">
       <CardHeader>
-        <ThinkingBadge label="Thinking" />
+        <ThinkingBadge label="Searching" />
       </CardHeader>
       <CardContent className="space-y-3">
         <Skeleton className="h-12 w-full" />

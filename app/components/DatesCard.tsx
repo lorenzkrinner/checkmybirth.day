@@ -26,7 +26,7 @@ function ageStats(birth: Date, now = new Date()) {
 export function DatesCard({ birthDate }: { birthDate: Date }) {
   const { years, daysLived, daysToNext } = ageStats(birthDate);
   return (
-    <Card className="polaroid rotate-1">
+    <Card className="polaroid -rotate-1">
       <CardHeader>
         <CardTitle className="font-serif text-3xl">A Few Numbers</CardTitle>
       </CardHeader>

@@ -1,3 +1,28 @@
+import { Skeleton } from "@/components/ui/skeleton";
+
+export function PolaroidSkeleton({
+  className,
+  style,
+}: {
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <div
+      style={style}
+      className={`absolute z-20 hidden md:block bg-white pt-3 pb-10 px-3 shadow-[0_8px_24px_-6px_rgba(0,0,0,0.25)] ${className ?? ""}`}
+    >
+      <div className="aspect-square w-full overflow-hidden bg-stone-200">
+        <Skeleton className="w-full h-full rounded-none" />
+      </div>
+      <div className="mt-3 flex flex-col items-center gap-1.5 px-1">
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-4 w-1/2" />
+      </div>
+    </div>
+  );
+}
+
 export function PolaroidPhoto({
   url,
   caption,

@@ -82,58 +82,51 @@ export function WeatherWidget({
   const sunrise = data.daily.sunrise[0]?.split("T")[1]?.slice(0, 5);
 
   return (
-    <Card className="polaroid">
-      <CardHeader>
-        <CardTitle className="font-serif text-3xl">Weather</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className={`rounded-2xl bg-gradient-to-b ${day.bg} text-white p-5 shadow-inner`}>
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <div className="text-2xl font-medium">{city}</div>
-              <div className="text-6xl font-light tracking-tight mt-1">
-                {noonTemp}°
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-5xl">{day.icon}</div>
-              <div className="text-sm font-medium mt-2">{day.label}</div>
-              <div className="text-xs opacity-80">
-                H:{high}° L:{low}°
-              </div>
-            </div>
+    <div className={`rounded-2xl bg-gradient-to-b ${day.bg} text-white p-5 shadow-inner`}>
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <div className="text-2xl font-medium">{city}</div>
+          <div className="text-6xl font-light tracking-tight mt-1">
+            {noonTemp}°
           </div>
-
-          <div className="grid grid-cols-7 gap-1 text-center pt-4 border-t border-white/20">
-            {HOURS.map((h) => {
-              const idx = data.hourly.time.findIndex((t) =>
-                t.endsWith(`T${String(h).padStart(2, "0")}:00`)
-              );
-              if (idx < 0) return <div key={h} />;
-              const temp = Math.round(data.hourly.temperature_2m[idx]);
-              const code = data.hourly.weathercode[idx];
-              const isNight = h < 6 || h > 19;
-              const w = weatherFor(code, isNight);
-              return (
-                <div key={h} className="flex flex-col items-center gap-1">
-                  <div className="text-xs opacity-90">
-                    {h === 0 ? "12AM" : h < 12 ? `${h}AM` : h === 12 ? "12PM" : `${h - 12}PM`}
-                  </div>
-                  <div className="text-xl">{w.icon}</div>
-                  <div className="text-sm font-medium">{temp}°</div>
-                </div>
-              );
-            })}
-          </div>
-
-          {(sunrise || sunset) && (
-            <div className="flex justify-between text-xs opacity-80 mt-4 pt-3 border-t border-white/20">
-              {sunrise && <span>🌅 Sunrise {sunrise}</span>}
-              {sunset && <span>🌇 Sunset {sunset}</span>}
-            </div>
-          )}
         </div>
-      </CardContent>
-    </Card>
+        <div className="text-right">
+          <div className="text-5xl">{day.icon}</div>
+          <div className="text-sm font-medium mt-2">{day.label}</div>
+          <div className="text-xs opacity-80">
+            H:{high}° L:{low}°
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-7 gap-1 text-center pt-4 border-t border-white/20">
+        {HOURS.map((h) => {
+          const idx = data.hourly.time.findIndex((t) =>
+            t.endsWith(`T${String(h).padStart(2, "0")}:00`)
+          );
+          if (idx < 0) return <div key={h} />;
+          const temp = Math.round(data.hourly.temperature_2m[idx]);
+          const code = data.hourly.weathercode[idx];
+          const isNight = h < 6 || h > 19;
+          const w = weatherFor(code, isNight);
+          return (
+            <div key={h} className="flex flex-col items-center gap-1">
+              <div className="text-xs opacity-90">
+                {h === 0 ? "12AM" : h < 12 ? `${h}AM` : h === 12 ? "12PM" : `${h - 12}PM`}
+              </div>
+              <div className="text-xl">{w.icon}</div>
+              <div className="text-sm font-medium">{temp}°</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {(sunrise || sunset) && (
+        <div className="flex justify-between text-xs opacity-80 mt-4 pt-3 border-t border-white/20">
+          {sunrise && <span>🌅 Sunrise {sunrise}</span>}
+          {sunset && <span>🌇 Sunset {sunset}</span>}
+        </div>
+      )}
+    </div>
   );
 }

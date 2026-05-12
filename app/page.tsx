@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { LocationSearch, type Location } from "./components/LocationSearch";
 import { WeatherWidget, fetchWeather, type ArchiveResponse } from "./components/WeatherWidget";
 import { DatePicker } from "./components/DatePicker";
-import { PolaroidPhoto } from "./components/PolaroidPhoto";
+import { PolaroidPhoto, PolaroidSkeleton } from "./components/PolaroidPhoto";
 import { Doodles } from "./components/Doodles";
 import { DevSnapshotToggle } from "./components/DevSnapshotToggle";
 import { SourcePebbles } from "./components/SourcePebbles";
@@ -128,6 +128,7 @@ export default function Home() {
     activeSearchRef.current = searchId;
     polaroidFetchedRef.current = null;
     setPolaroidPool([]);
+    setPhotosLoading(true);
     setCurrentSearchId(searchId);
     setSubmittedDate(date);
     setSubmittedLocation(location);
@@ -216,6 +217,7 @@ export default function Home() {
   const polaroidSearchId = currentSearchId && submittedDate ? currentSearchId : null;
 
   const [polaroidPool, setPolaroidPool] = useState<PhotoHit[]>([]);
+  const [photosLoading, setPhotosLoading] = useState(false);
   const polaroidFetchedRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -231,6 +233,7 @@ export default function Home() {
     ].filter((q): q is string => !!q);
     if (queries.length === 0) return;
     polaroidFetchedRef.current = polaroidSearchId;
+    setPhotosLoading(true);
 
     let cancelled = false;
     Promise.all(
@@ -252,6 +255,7 @@ export default function Home() {
       });
       const shuffled = [...pool].sort(() => Math.random() - 0.5);
       setPolaroidPool(shuffled.slice(0, 6));
+      setPhotosLoading(false);
     });
 
     return () => {
@@ -270,12 +274,13 @@ export default function Home() {
 
   const TOP_PCT = 8;
   const BOTTOM_PCT = 88;
-  const n = polaroidPool.length;
+  const showPhotoSkeletons = photosLoading && polaroidPool.length === 0;
+  const visibleCount = showPhotoSkeletons ? slotStyles.length : polaroidPool.length;
   const slotTopPct = (i: number) =>
-    n <= 1 ? TOP_PCT : TOP_PCT + (i / (n - 1)) * (BOTTOM_PCT - TOP_PCT);
+    visibleCount <= 1 ? TOP_PCT : TOP_PCT + (i / (visibleCount - 1)) * (BOTTOM_PCT - TOP_PCT);
 
   return (
-    <main className="min-h-screen text-stone-900 px-6 pt-16 pb-40 relative overflow-hidden">
+    <main className="min-h-screen text-stone-900 px-6 pt-16 pb-24 relative overflow-hidden">
       <div aria-hidden className="notebook-paper absolute inset-0 z-0 pointer-events-none" />
       <Doodles />
       {isDev && (
@@ -285,7 +290,15 @@ export default function Home() {
           hasSnapshot={hasSnapshot}
         />
       )}
-      {polaroidSearchId &&
+      {polaroidSearchId && showPhotoSkeletons &&
+        slotStyles.map((slot, i) => (
+          <PolaroidSkeleton
+            key={`${polaroidSearchId}-skeleton-${i}`}
+            className={`hidden! xl:block! w-40 md:w-56 ${slot.side} ${slot.tilt}`}
+            style={{ top: `${slotTopPct(i)}%` }}
+          />
+        ))}
+      {polaroidSearchId && !showPhotoSkeletons &&
         polaroidPool.map((p, i) => {
           const slot = slotStyles[i];
           return (
@@ -344,23 +357,24 @@ export default function Home() {
             ) : (
               <SnapshotSkeletonCard />
             ))}
-
+          
+          {submittedDate && (data ? <NewsCard news={data.news} /> : <NewsSkeletonCard />)}
           {submittedDate && <DatesCard birthDate={submittedDate} />}
-          {submittedDate &&
-            (factsData ? <DeathsCard facts={factsData} /> : <DeathsSkeletonCard />)}
-            {submittedLocation &&
-              (weatherData ? (
-                <div className="rotate-1">
-                  <WeatherWidget location={submittedLocation} data={weatherData} />
-                </div>
-              ) : (
-                <WeatherSkeletonCard />
-              ))}
+          {submittedLocation &&
+            (weatherData ? (
+              <div className="rotate-1">
+                <WeatherWidget location={submittedLocation} data={weatherData} />
+              </div>
+            ) : (
+              <WeatherSkeletonCard />
+            )
+          )}
           {submittedDate && <MoonCard birthDate={submittedDate} />}
           {submittedDate &&
+            (factsData ? <DeathsCard facts={factsData} /> : <DeathsSkeletonCard />)
+          }
+          {submittedDate &&
             (factsData ? <TopMovieCard facts={factsData} /> : <TopMovieSkeletonCard />)}
-
-          {submittedDate && (data ? <NewsCard news={data.news} /> : <NewsSkeletonCard />)}
 
           {submittedDate && !musicFailed &&
             (musicData ? (
@@ -393,7 +407,7 @@ function SnapshotSkeletonCard() {
   return (
     <Card className="polaroid -rotate-1">
       <CardHeader>
-        <ThinkingBadge label="Thinking" />
+        <ThinkingBadge label="Summarizing" />
       </CardHeader>
       <CardContent className="space-y-2">
         <Skeleton className="h-4 w-full" />
