@@ -20,7 +20,10 @@ import { PolaroidPhoto } from "./components/PolaroidPhoto";
 import { Doodles } from "./components/Doodles";
 import { DevSnapshotToggle } from "./components/DevSnapshotToggle";
 import { InlineSourced, SourcePebbles } from "./components/SourcePebbles";
-import { DatesCard, MoonCard, TopMovieCard, DeathsCard } from "./components/FactsCard";
+import { DatesCard } from "./components/DatesCard";
+import { MoonCard } from "./components/MoonCard";
+import { TopMovieCard } from "./components/TopMovieCard";
+import { DeathsCard } from "./components/DeathsCard";
 import type { PhotoHit, PhotoResponse } from "./api/photo/route";
 import type { FactsResponse } from "./api/facts/route";
 
