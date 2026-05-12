@@ -1,4 +1,4 @@
-import { generateText, Output } from "ai";
+import { generateText } from "ai";
 import { z } from "zod";
 import { vertex } from "@/lib/vertex";
 
@@ -50,12 +50,16 @@ async function handle(req: Request) {
     day: "numeric",
   });
 
-  const { output } = await generateText({
+  const { text } = await generateText({
     model: vertex(MODEL),
     tools: { google_search: vertex.tools.googleSearch({}) },
     temperature: 0.4,
-    output: Output.object({ schema: ResponseSchema }),
-    prompt: `Research ${monthDay}, ${year} — the exact day someone was born${location ? ` in or near ${location}` : ""} — using web search.
+    prompt: `Research ${monthDay}, ${year} — the exact day someone was born${location ? ` in or near ${location}` : ""} — using web search. Then respond with ONLY a JSON object (no preamble, no markdown fences) matching this exact shape:
+
+{
+  "summary": "2-3 sentence vivid snapshot of what the world felt like that exact day",
+  "summarySources": ["https://...", "https://..."]
+}
 
 Rules:
 - Return a 2-3 sentence vivid snapshot of what the world felt like that exact day.
@@ -65,7 +69,10 @@ Rules:
 - Never invent facts or URLs — only use what your web search returned.`,
   });
 
-  return Response.json(await resolveGroundingRedirects(output));
+  const match = text.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error("Model did not return JSON");
+  const parsed = ResponseSchema.parse(JSON.parse(match[0]));
+  return Response.json(await resolveGroundingRedirects(parsed));
 }
 
 type Parsed = z.infer<typeof ResponseSchema>;
