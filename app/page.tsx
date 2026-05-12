@@ -17,7 +17,7 @@ import { DatesCard } from "./components/DatesCard";
 import { MoonCard } from "./components/MoonCard";
 import { TopMovieCard, TopMovieSkeletonCard } from "./components/TopMovieCard";
 import { DeathsCard, DeathsSkeletonCard } from "./components/DeathsCard";
-import { SinglesCarousel } from "./components/SinglesCarousel";
+import { MusicCard, MusicSkeletonCard } from "./components/SinglesCarousel";
 import type { PhotoHit, PhotoResponse } from "./api/photo/route";
 import type { FactsResponse } from "./api/facts/route";
 
@@ -356,19 +356,12 @@ export default function Home() {
 
           {submittedDate &&
             (musicData ? (
-              <Card className="polaroid rotate-1">
-                <CardHeader>
-                  <CardTitle className="font-serif text-3xl">Number One That Week</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <SinglesCarousel
-                    globalDaily={musicData.charts.globalDaily}
-                    regional={musicData.charts.regional}
-                    us={musicData.charts.us}
-                    regionalChartName={musicData.regionalChartName}
-                  />
-                </CardContent>
-              </Card>
+              <MusicCard
+                globalDaily={musicData.charts.globalDaily}
+                regional={musicData.charts.regional}
+                us={musicData.charts.us}
+                regionalChartName={musicData.regionalChartName}
+              />
             ) : (
               <MusicSkeletonCard />
             ))}
@@ -417,17 +410,3 @@ function WeatherSkeletonCard() {
   );
 }
 
-function MusicSkeletonCard() {
-  return (
-    <Card className="polaroid rotate-1">
-      <CardHeader>
-        <Skeleton className="h-7 w-48" />
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <Skeleton className="h-48 w-full rounded-2xl" />
-        <Skeleton className="h-6 w-full" />
-        <Skeleton className="h-6 w-2/3" />
-      </CardContent>
-    </Card>
-  );
-}

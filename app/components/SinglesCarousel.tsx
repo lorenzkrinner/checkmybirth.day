@@ -1,5 +1,7 @@
 "use client";
 
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Carousel,
   CarouselContent,
@@ -11,17 +13,42 @@ import { SongCard } from "./SongCard";
 
 type Song = { song: string; artist: string };
 
-export function SinglesCarousel({
-  globalDaily,
-  regional,
-  us,
-  regionalChartName,
-}: {
+type Props = {
   globalDaily: Song | null;
   regional: Song | null;
   us: Song | null;
   regionalChartName: string | null;
-}) {
+};
+
+export function MusicCard(props: Props) {
+  return (
+    <Card className="polaroid rotate-1">
+      <CardHeader>
+        <CardTitle className="font-serif text-3xl">Number One That Week</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <SinglesCarousel {...props} />
+      </CardContent>
+    </Card>
+  );
+}
+
+export function MusicSkeletonCard() {
+  return (
+    <Card className="polaroid rotate-1">
+      <CardHeader>
+        <Skeleton className="h-7 w-48" />
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <Skeleton className="h-48 w-full rounded-2xl" />
+        <Skeleton className="h-6 w-full" />
+        <Skeleton className="h-6 w-2/3" />
+      </CardContent>
+    </Card>
+  );
+}
+
+export function SinglesCarousel({ globalDaily, regional, us, regionalChartName }: Props) {
   const items = [
     { label: "Global Top Today", song: globalDaily },
     { label: regionalChartName ?? "Regional", song: regional },
