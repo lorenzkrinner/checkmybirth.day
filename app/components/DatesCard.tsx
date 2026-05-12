@@ -1,6 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const MS_PER_DAY = 86_400_000;
 
@@ -38,6 +39,26 @@ export function DatesCard({ birthDate }: { birthDate: Date }) {
             value={daysToNext === 0 ? "today!" : daysToNext.toLocaleString()}
             label={daysToNext === 0 ? "🎂" : "days to next birthday"}
           />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function DatesSkeletonCard() {
+  return (
+    <Card className="polaroid -rotate-1">
+      <CardHeader>
+        <Skeleton className="h-7 w-32" />
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-3 gap-4 text-center">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="flex flex-col items-center gap-2">
+              <Skeleton className="h-14 w-20" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+          ))}
         </div>
       </CardContent>
     </Card>

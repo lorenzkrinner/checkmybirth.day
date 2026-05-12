@@ -2,6 +2,7 @@
 
 import { Moon } from "lunarphase-js";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { svgs } from "@/components/svgs";
 
 const PHASE_FILE: Record<string, string> = {
@@ -77,6 +78,22 @@ export function MoonCard({ birthDate }: { birthDate: Date }) {
       </div>
       <div className="absolute bottom-3 right-4 z-20 text-right">
         <div className="font-serif text-sm text-stone-200 leading-tight">{phase} Moon · {illumination}% lit</div>
+      </div>
+    </Card>
+  );
+}
+
+export function MoonSkeletonCard() {
+  return (
+    <Card className="-rotate-1 relative overflow-hidden border-0 bg-black">
+      <CardContent className="relative flex items-center justify-center py-14 min-h-72 px-0">
+        <Skeleton className="w-44 h-44 rounded-full bg-stone-700/40" />
+      </CardContent>
+      <div className="absolute top-4 left-4 z-20">
+        <Skeleton className="h-5 w-32 bg-stone-700/40" />
+      </div>
+      <div className="absolute bottom-3 right-4 z-20">
+        <Skeleton className="h-4 w-40 bg-stone-700/40" />
       </div>
     </Card>
   );

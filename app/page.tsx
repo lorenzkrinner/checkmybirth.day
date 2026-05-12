@@ -14,8 +14,8 @@ import { Doodles } from "./components/Doodles";
 import { DevSnapshotToggle } from "./components/DevSnapshotToggle";
 import { SourcePebbles } from "./components/SourcePebbles";
 import { InlineSourced } from "./components/InlineSourced";
-import { DatesCard } from "./components/DatesCard";
-import { MoonCard } from "./components/MoonCard";
+import { DatesCard, DatesSkeletonCard } from "./components/DatesCard";
+import { MoonCard, MoonSkeletonCard } from "./components/MoonCard";
 import { TopMovieCard, TopMovieSkeletonCard } from "./components/TopMovieCard";
 import { ThinkingBadge } from "./components/ThinkingBadge";
 import { DeathsCard, DeathsSkeletonCard } from "./components/DeathsCard";
@@ -333,12 +333,12 @@ export default function Home() {
 
           {submittedDate && (
             <SpringIn>
-              <DatesCard birthDate={submittedDate} />
+              {data ? <DatesCard birthDate={submittedDate} /> : <DatesSkeletonCard />}
             </SpringIn>
           )}
           {submittedLocation && submittedDate && (
             <SpringIn>
-              {weatherData ? (
+              {data && weatherData ? (
                 <div className="rotate-1">
                   <WeatherWidget location={submittedLocation} data={weatherData} date={submittedDate} />
                 </div>
@@ -349,23 +349,23 @@ export default function Home() {
           )}
           {submittedDate && (
             <SpringIn>
-              <MoonCard birthDate={submittedDate} />
+              {data ? <MoonCard birthDate={submittedDate} /> : <MoonSkeletonCard />}
             </SpringIn>
           )}
           {submittedDate && (
             <SpringIn>
-              {factsData ? <DeathsCard facts={factsData} /> : <DeathsSkeletonCard />}
+              {data && factsData ? <DeathsCard facts={factsData} /> : <DeathsSkeletonCard />}
             </SpringIn>
           )}
           {submittedDate && (
             <SpringIn>
-              {factsData ? <TopMovieCard facts={factsData} /> : <TopMovieSkeletonCard />}
+              {data && factsData ? <TopMovieCard facts={factsData} /> : <TopMovieSkeletonCard />}
             </SpringIn>
           )}
 
           {submittedDate && !musicFailed && (
             <SpringIn>
-              {musicData ? (
+              {data && musicData ? (
                 <MusicCard
                   globalDaily={musicData.charts.globalDaily}
                   regional={musicData.charts.regional}
