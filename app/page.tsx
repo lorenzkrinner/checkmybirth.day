@@ -259,26 +259,14 @@ export default function Home() {
     { side: "-right-20 md:right-16", tilt: "-rotate-4" },
   ];
 
-  const mainRef = useRef<HTMLElement | null>(null);
-  const [mainHeight, setMainHeight] = useState(0);
-
-  useEffect(() => {
-    if (!mainRef.current) return;
-    const el = mainRef.current;
-    const ro = new ResizeObserver(([entry]) => setMainHeight(entry.contentRect.height));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  const PAD_TOP = 280;
-  const PAD_BOTTOM = 280;
+  const TOP_PCT = 8;
+  const BOTTOM_PCT = 88;
   const n = polaroidPool.length;
-  const usable = Math.max(0, mainHeight - PAD_TOP - PAD_BOTTOM);
-  const slotTop = (i: number) =>
-    n <= 1 ? PAD_TOP : PAD_TOP + (i / (n - 1)) * usable;
+  const slotTopPct = (i: number) =>
+    n <= 1 ? TOP_PCT : TOP_PCT + (i / (n - 1)) * (BOTTOM_PCT - TOP_PCT);
 
   return (
-    <main ref={mainRef} className="min-h-screen text-stone-900 px-6 pt-16 pb-40 relative overflow-hidden">
+    <main className="min-h-screen text-stone-900 px-6 pt-16 pb-40 relative overflow-hidden">
       <div aria-hidden className="notebook-paper absolute inset-0 z-0 pointer-events-none" />
       <Doodles />
       {isDev && (
@@ -289,7 +277,6 @@ export default function Home() {
         />
       )}
       {polaroidSearchId &&
-        mainHeight > 0 &&
         polaroidPool.map((p, i) => {
           const slot = slotStyles[i];
           return (
@@ -299,7 +286,7 @@ export default function Home() {
               caption={p.title}
               source={p.source}
               className={`w-40 md:w-56 ${slot.side} ${slot.tilt}`}
-              style={{ top: `${slotTop(i)}px` }}
+              style={{ top: `${slotTopPct(i)}%` }}
             />
           );
         })}
