@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SourcePebbles } from "./SourcePebbles";
+import { ThinkingBadge } from "./ThinkingBadge";
 
 const VERTEX = /vertexaisearch\.cloud\.google\.com/;
 
@@ -65,7 +66,7 @@ export function NewsSkeletonCard() {
   return (
     <Card className="polaroid -rotate-2">
       <CardHeader>
-        <Skeleton className="h-7 w-40" />
+        <ThinkingBadge label="Thinking" />
       </CardHeader>
       <CardContent className="space-y-3">
         <Skeleton className="h-12 w-full" />

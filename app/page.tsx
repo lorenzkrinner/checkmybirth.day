@@ -16,6 +16,7 @@ import { InlineSourced, NewsCard, NewsSkeletonCard } from "./components/NewsCard
 import { DatesCard } from "./components/DatesCard";
 import { MoonCard } from "./components/MoonCard";
 import { TopMovieCard, TopMovieSkeletonCard } from "./components/TopMovieCard";
+import { ThinkingBadge } from "./components/ThinkingBadge";
 import { DeathsCard, DeathsSkeletonCard } from "./components/DeathsCard";
 import { MusicCard, MusicSkeletonCard } from "./components/SinglesCarousel";
 import type { PhotoHit, PhotoResponse } from "./api/photo/route";
@@ -381,7 +382,7 @@ function SnapshotSkeletonCard() {
   return (
     <Card className="polaroid -rotate-1">
       <CardHeader>
-        <Skeleton className="h-7 w-32" />
+        <ThinkingBadge label="Thinking" />
       </CardHeader>
       <CardContent className="space-y-2">
         <Skeleton className="h-4 w-full" />
