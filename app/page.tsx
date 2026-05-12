@@ -292,7 +292,7 @@ export default function Home() {
               url={p.url}
               caption={p.title}
               source={p.source}
-              className={`w-40 md:w-56 ${slot.side} ${slot.tilt}`}
+              className={`hidden! xl:block! w-40 md:w-56 ${slot.side} ${slot.tilt}`}
               style={{ top: `${slotTopPct(i)}%` }}
             />
           );
