@@ -66,7 +66,10 @@ export function SinglesCarousel({ globalDaily, regional, us, regionalChartName }
     <Carousel opts={{ align: "start" }} className="w-full">
       <CarouselContent className="-ml-3">
         {items.map(({ label, song }) => (
-          <CarouselItem key={`${label}-${song.song}-${song.artist}`} className="pl-3 basis-full sm:basis-1/2">
+          <CarouselItem
+            key={`${label}-${song.song}-${song.artist}`}
+            className={`pl-3 basis-full ${items.length > 1 ? "sm:basis-1/2" : ""}`}
+          >
             <SongCard song={song.song} artist={song.artist} label={label} />
           </CarouselItem>
         ))}
