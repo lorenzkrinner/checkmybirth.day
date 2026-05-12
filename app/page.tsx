@@ -233,7 +233,7 @@ export default function Home() {
     let cancelled = false;
     Promise.all(
       queries.map((q) =>
-        fetch(`/api/photo?q=${encodeURIComponent(q)}&sid=${polaroidSearchId}`, {
+        fetch(`/api/photo?q=${encodeURIComponent(q)}${year ? `&year=${year}` : ""}&sid=${polaroidSearchId}`, {
           cache: "no-store",
         })
           .then((r) => r.json() as Promise<PhotoResponse>)
